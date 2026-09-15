@@ -20,3 +20,9 @@ playwright-report/
 
 # Generated build artifacts
 *.snapshot
+
+
+# Personal stuff
+reports/
+plans/
+wikipedia-rag-roadmap.md

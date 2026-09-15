@@ -1,0 +1,22 @@
+# Downloaded or generated RAG assets
+data/
+models/
+
+# Local dependency environments
+.venv/
+node_modules/
+
+# Build and test output
+dist/
+coverage/
+test-results/
+playwright-report/
+
+# Secrets: templates are intentionally allowed below
+.env*
+.dev.vars*
+!.env.example
+!.dev.vars.example
+
+# Generated build artifacts
+*.snapshot

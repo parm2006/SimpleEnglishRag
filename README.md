@@ -1,0 +1,1 @@
+This is improgress repo of making a public simple english RAG system.

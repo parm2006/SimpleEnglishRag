@@ -11,6 +11,9 @@ dist/
 coverage/
 test-results/
 playwright-report/
+__pycache__/
+*.py[cod]
+
 
 # Secrets: templates are intentionally allowed below
 .env*

@@ -2,13 +2,13 @@ import uuid
 from itertools import batched
 from typing import Iterable, Iterator
 from qdrant_client import models
-from simpleenglishrag.chunk import Chunk, create_chunks
-from simpleenglishrag.embed import embed_chunks
-from simpleenglishrag.ingest import Document
+from ser.chunk import Chunk, create_chunks
+from ser.embed import embed_chunks
+from ser.ingest import Document
 
 
 def iter_chunks(
-    docs: Iterable[Document], chunk_size: int = 500, overlap: int = 100
+    docs: Iterable[Document], chunk_size: int = 1200, overlap: int = 200
 ) -> Iterator[Chunk]:
     """Lazily yields chunks from an iterable stream of documents."""
     for doc in docs:

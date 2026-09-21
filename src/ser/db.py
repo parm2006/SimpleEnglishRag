@@ -1,20 +1,39 @@
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 from qdrant_client import QdrantClient, models
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+load_dotenv(PROJECT_ROOT / ".env")
+load_dotenv()
 
+QDRANT_STORAGE = os.getenv("QDRANT_STORAGE", "local").lower()
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
 
+_raw_local_path = os.getenv("QDRANT_LOCAL_PATH", "data/qdrant_db")
+QDRANT_LOCAL_PATH = (
+    str(PROJECT_ROOT / _raw_local_path)
+    if not os.path.isabs(_raw_local_path)
+    else _raw_local_path
+)
+COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "simple_wiki")
+
 
 def get_client() -> QdrantClient:
-    if QDRANT_URL:
+    if QDRANT_STORAGE == "cloud" and QDRANT_URL:
         return QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
-    return QdrantClient(":memory:")
+    elif QDRANT_STORAGE == "memory":
+        return QdrantClient(":memory:")
+    # Default: local SSD storage
+    os.makedirs(QDRANT_LOCAL_PATH, exist_ok=True)
+    return QdrantClient(path=QDRANT_LOCAL_PATH)
 
 
 client = get_client()
 
-COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "test_collection")
+import atexit
+atexit.register(client.close)
 
 
 def init_collection(client: QdrantClient) -> None:
@@ -24,10 +43,20 @@ def init_collection(client: QdrantClient) -> None:
             vectors_config=models.VectorParams(
                 size=384,
                 distance=models.Distance.COSINE,
+                on_disk=True,
             ),
+            quantization_config=models.ScalarQuantization(
+                scalar=models.ScalarQuantizationConfig(
+                    type=models.ScalarType.INT8,
+                    quantile=0.99,
+                    always_ram=True,
+                )
+            ),
+            on_disk_payload=True,
             hnsw_config=models.HnswConfigDiff(
                 m=16,
                 ef_construct=100,
+                on_disk=True,
             ),
         )
 

@@ -30,13 +30,14 @@ Per explicit user decisions, the following originally planned components have be
 | **Full Corpus Colab GPU Execution** | Phase 1 | ✅ **410,000+ Chunks** | Ingested via [`colab_standalone.ipynb`](../../colab_standalone.ipynb) on T4 GPU into Qdrant Cloud. Status: `green`. |
 | **MCP Server (Model Context Protocol)** | Expansion | ✅ **Done** | [`src/ser/mcp_server.py`](../../src/ser/mcp_server.py) exposing `search_wikipedia`, `ask_wikipedia`, and `index_article` to Google Antigravity, Claude Desktop, and Cursor. |
 | **Evaluation Suite (`eval.py`)** | Phase 4.2 | ✅ **Done** | Automated benchmark: **100% Hit@5**, **86.7% Hit@1**, **0.9150 MRR**, **98.7 ms p50 latency** across 30 domains. |
+| **Hybrid Search (Dense + BM25)** | Plan 014 | ✅ **Done** | FastEmbed BM25 + Qdrant Cloud on-disk payload text index + RRF fusion (+6.2% recall, 114 ms latency). |
+| **Cross-Encoder Re-Ranking** | Plan 014 | ✅ **Done** | `Xenova/bge-reranker-base` INT8 ONNX cross-encoder with dynamic padding and candidate pool architecture. |
 | **Universal Ingestion ("Ingest Anything")**| Phase 3.2 | ⏳ **Next** | Ingestion source adapters for local PDFs, Markdown vaults, and plain text folders (`ser ingest`). |
-| **Hybrid Search (Dense + BM25)** | Phase 4.1 | ⏳ **Backlog** | FastEmbed BM25 sparse vectors paired with dense vectors via Reciprocal Rank Fusion (RRF). |
 
 ---
 
 ## 3. Active Next Priorities
 
 1. **Universal Ingestion ("Ingest Anything")**: Expand beyond Wikipedia to local PDFs, Markdown vaults, and raw text folders (`ser ingest`).
-2. **Hybrid Search (Dense + BM25)**: FastEmbed BM25 sparse vectors paired with dense vectors via Reciprocal Rank Fusion (RRF).
+
 

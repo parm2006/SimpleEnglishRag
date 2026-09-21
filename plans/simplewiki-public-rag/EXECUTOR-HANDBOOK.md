@@ -4,7 +4,7 @@
 
 > [!IMPORTANT]
 > **Project Pivot Notice**: As documented in [README.md](file:///c:/Users/parth/Projects/SimpleEnglishRAG/plans/simplewiki-public-rag/README.md), this project pivoted from a public web application into a local-first Python RAG engine named `ser`.
-> - Plans 001–006, 009, 010, and 012 are **COMPLETED** (modular `src/ser/` engine, FastEmbed ONNX vectors, Qdrant Cloud hosted storage with INT8 quantization, 245,375 corpus chunks ingested, local Ollama generation, global CLI, and MCP server).
+> - Plans 001–006, 009, 010, 012, and 014 are **COMPLETED** (modular `src/ser/` engine, FastEmbed ONNX vectors, Qdrant Cloud hosted storage with INT8 quantization, 476k+ corpus chunks ingested, local Ollama generation, global CLI, MCP server, sub-120ms hybrid search, and cross-encoder re-ranking).
 > - Plans 007, 008, 011, and 013 are **DROPPED** (browser UI, Cloudflare Worker, and Postgres fallback are out of scope).
 
 Read README.md for order. Give an agent ONE numbered plan, this handbook, CONTRACTS.md and ARCHITECTURE.md. It must read the plan's stated dependencies from the repository; no conversation history is assumed.

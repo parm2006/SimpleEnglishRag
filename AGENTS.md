@@ -21,16 +21,20 @@ When performing research or answering questions within agent workflows, you can 
 ### A. Semantic Search Only (Fastest, No LLM Required)
 ```bash
 ser search "<query>"
+# Or with hybrid dense + BM25 fusion
+ser search "<query>" --hybrid
+# Or with cross-encoder re-ranking
+ser search "<query>" --rerank
 ```
-- **Returns**: Top passages with title, similarity score (Cosine: 0.0 - 1.0), URL, and chunk text.
-- **Latency**: < 300 ms over HTTPS to Qdrant Cloud.
+- **Returns**: Top passages with title, similarity score (Cosine / RRF / Re-rank), URL, and chunk text.
+- **Latency**: < 100 ms for vector search; ~114 ms for hybrid search; ~2s for cross-encoder.
 - **Recommended for**: Gathering background facts, verifying claims, finding source citations.
 
 ### B. Full RAG Question Answering (Requires Local Ollama)
 ```bash
 ser "<question>"
 # or
-ser ask "<question>"
+ser ask "<question>" [--hybrid] [--rerank]
 ```
 - **Returns**: Formatted answer with `[1]`, `[2]` footnote markers and a citations table.
 - **Guardrail**: Automatically returns `"I could not find sufficient information..."` if top similarity score is below `0.40`.
@@ -58,9 +62,9 @@ from ser.db import client
 from ser.pipeline import ask
 from ser.generate import generate_answer
 
-# Step 1: Retrieve top-k scored chunks
+# Step 1: Retrieve top-k scored chunks (optional hybrid and rerank)
 query = "What is gravity?"
-chunks = ask(client, query=query, k=3)
+chunks = ask(client, query=query, k=3, hybrid=True, rerank=False)
 
 for point in chunks:
     title = point.payload.get("title")

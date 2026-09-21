@@ -58,9 +58,10 @@ def ask(
 ) -> list[models.ScoredPoint]:
     """Retrieves top-k chunks from Qdrant with optional 2nd-stage cross-encoder re-ranking."""
     query_vector = embed_query(query)
-    points = search_query(client, query_vector=query_vector, k=k)
+    # Always fetch a candidate pool (15 candidates) from Qdrant
+    candidates = search_query(client, query_vector=query_vector, k=max(k, 15))
     if rerank:
-        return rerank_points(query, points, top_k=k)
-    return points
+        return rerank_points(query, candidates, top_k=k)
+    return candidates[:k]
 
 

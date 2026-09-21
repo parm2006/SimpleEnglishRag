@@ -160,8 +160,44 @@ Available inside the REPL:
 - `/ingest-wiki <title>`: Index a live article
 - `/ingest-dump [N]`: Ingest from dump
 - `/stats`: Show collection statistics
+- `/eval [k]`: Run evaluation benchmark
 - `/help`: Show command list
 - `/exit`: Exit
+
+### Automated Evaluation Benchmark
+Runs the multi-domain retrieval accuracy benchmark measuring Hit@1, Hit@3, Hit@5, MRR, and round-trip latency:
+```bash
+ser eval
+# Or custom top-k:
+ser eval 10
+```
+Exports a detailed scorecard to `reports/eval_results.md`.
+
+---
+
+## Understanding Qdrant Status & Relevance Colors
+
+### 1. Cluster & Collection Status (`ser stats`)
+When running `ser stats` or checking Qdrant cluster health, the `status` indicates shard readiness:
+- **`green` (Optimal / Healthy)**: The collection is fully operational. All vector shards, HNSW graphs, and INT8 scalar quantization indexes are synchronized and ready for queries.
+- **`yellow` (Optimizing / Degraded)**: The collection is actively optimizing in the background (e.g. segment merging, WAL vacuuming, or rebuilding the vector quantization index). Queries still work normally, but background resource utilization is active.
+- **`red` (Unhealthy / Down)**: One or more shards are unavailable or corrupted. Search queries may fail or return partial results.
+- **`grey` (Initializing / Stopped)**: The collection is booting up or paused.
+
+### 2. Search Similarity Score Colors (`ser search`)
+When running semantic searches, retrieved chunks display cosine similarity scores color-coded by relevance:
+- 🟢 **Green (`>= 0.70`) — High Semantic Confidence**:
+  The passage directly answers or addresses the core query concept. Strongest candidates for LLM generation.
+- 🟡 **Yellow (`0.50` to `0.69`) — Moderate Topical Relevance**:
+  The passage contains related background context, adjacent concepts, or broader subject details.
+- 🔴 **Red (`< 0.50`) — Low Relevance / Fringe Match**:
+  Weak semantic correlation. If the top-1 retrieval score is below `0.40`, `ser`'s anti-hallucination guardrail triggers and blocks the local LLM from answering to prevent hallucination.
+
+### 3. Evaluation Benchmark Colors (`ser eval`)
+- 🟢 **Hit @ 1**: Target article was retrieved at rank #1 (Top-1 Accuracy).
+- 🔵 **Hit @ 3**: Target article was retrieved within ranks #1–3 (Top-3 Recall).
+- 🟡 **Hit @ 5**: Target article was retrieved within ranks #1–5 (Top-5 Recall).
+- 🔴 **Miss**: Target article was not within the top 5 retrieved candidates.
 
 ---
 
@@ -223,6 +259,7 @@ Each point in Qdrant contains the following payload dictionary:
 | `url` | `str` | Canonical Simple Wikipedia URL |
 | `chunk_index` | `int` | 0-indexed position within the article |
 | `text` | `str` | Chunk text (normalized, ~1,200 characters max) |
+| `breadcrumb` | `str` | Hierarchical heading path (e.g. `"Apollo 11 > The Flight > Going to and from space"`) |
 
 Deterministic UUIDs are generated with `uuid.uuid5(uuid.NAMESPACE_DNS, chunk_id)` for idempotent upserts.
 

@@ -85,6 +85,7 @@ Each point yielded by `ask()` is a `qdrant_client.models.ScoredPoint`:
   - `"url"`: `str` (Wikipedia URL)
   - `"chunk_index"`: `int` (Index within article)
   - `"text"`: `str` (Passage text)
+  - `"breadcrumb"`: `str` (Section hierarchy path e.g. `"Apollo 11 > The Flight"`)
 
 ---
 
@@ -110,3 +111,19 @@ Agents modifying or launching services should be aware of these configuration ke
 - **Windows UTF-8**: Ensure console stdout encodes in `utf-8` to prevent `cp1252` encoding errors on non-ASCII characters.
 - **Resilient Upserting**: Any code calling `client.upsert` must use the retry wrapper in `src/ser/db.py` to prevent batch job failures from network blips.
 - **Deterministic Deduplication**: Always use `uuid.uuid5(uuid.NAMESPACE_DNS, chunk.chunk_id)` for point IDs so re-ingesting content updates in-place idempotently.
+
+---
+
+## 6. Understanding Qdrant Status & Relevance Colors
+
+When evaluating cluster health or search scores:
+
+### A. Cluster Health Status (`ser stats`)
+- **`green`**: Fully healthy. All vector shards, HNSW graphs, and INT8 scalar quantization indexes are synchronized and ready for queries.
+- **`yellow`**: Optimizing. Background segment merging, WAL vacuuming, or quantization indexing is running. Queries still succeed.
+- **`red`**: Degraded/Down. One or more shards are unavailable. Queries may fail or return partial results.
+
+### B. Similarity Score Thresholds (`ser search`)
+- 🟢 **Green (`>= 0.70`)**: High semantic confidence. Strong factual relevance.
+- 🟡 **Yellow (`0.50` to `0.69`)**: Moderate relevance. Adjacent or topical background context.
+- 🔴 **Red (`< 0.50`)**: Low confidence. If top score is `< 0.40`, generation is aborted by anti-hallucination guardrail.

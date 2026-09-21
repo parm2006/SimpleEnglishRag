@@ -25,7 +25,7 @@ def get_client() -> QdrantClient:
     url = os.getenv("QDRANT_URL", QDRANT_URL)
     api_key = os.getenv("QDRANT_API_KEY", QDRANT_API_KEY)
     if storage == "cloud" and url:
-        return QdrantClient(url=url, api_key=api_key)
+        return QdrantClient(url=url, api_key=api_key, timeout=30.0)
     elif storage == "memory":
         return QdrantClient(":memory:")
     # Default: local SSD storage
@@ -62,6 +62,27 @@ def init_collection(client: QdrantClient) -> None:
                 ef_construct=100,
                 on_disk=True,
             ),
+        )
+        # Create full-text payload indexes for hybrid search
+        client.create_payload_index(
+            collection_name=COLLECTION_NAME,
+            field_name="title",
+            field_schema=models.TextIndexParams(
+                type=models.TextIndexType.TEXT,
+                tokenizer=models.TokenizerType.WORD,
+                lowercase=True,
+            ),
+        )
+        client.create_payload_index(
+            collection_name=COLLECTION_NAME,
+            field_name="text",
+            field_schema=models.TextIndexParams(
+                type=models.TextIndexType.TEXT,
+                tokenizer=models.TokenizerType.WORD,
+                lowercase=True,
+                on_disk=True,
+            ),
+            wait=False,
         )
 
 

@@ -78,29 +78,44 @@ def cmd_ingest_wiki(title: str) -> None:
     console.print(f"[green]Successfully indexed {count} chunks for '{doc.title}' ({doc.url})[/green]")
 
 
-def _extract_rerank_flag(args: list[str]) -> tuple[list[str], bool]:
-    """Helper to detect and remove --rerank or -r flag from arguments."""
+def _extract_search_flags(args: list[str]) -> tuple[list[str], bool, bool]:
+    """Helper to detect and remove --hybrid (-H) and --rerank (-r) flags from arguments."""
+    hybrid = False
     rerank = False
     clean = []
     for a in args:
-        if a.lower() in ("--rerank", "-r", "--re-rank"):
+        low = a.lower()
+        if low in ("--rerank", "-r", "--re-rank"):
             rerank = True
+        elif low in ("--hybrid", "-h", "-H", "--hyb"):
+            hybrid = True
         else:
             clean.append(a)
-    return clean, rerank
+    return clean, hybrid, rerank
 
 
-def cmd_search(query: str, k: int = 3, rerank: bool = False) -> None:
-    status_msg = "[cyan]Retrieving and re-ranking matches..." if rerank else "[cyan]Retrieving semantic matches..."
+def cmd_search(query: str, k: int = 3, hybrid: bool = False, rerank: bool = False) -> None:
+    if hybrid and rerank:
+        status_msg = "[cyan]Running hybrid retrieval & cross-encoder re-ranking..."
+        tag = " [dim](Hybrid + Re-ranked)[/dim]"
+    elif hybrid:
+        status_msg = "[cyan]Running hybrid search (Dense + BM25 via RRF)..."
+        tag = " [dim](Hybrid: Dense + BM25)[/dim]"
+    elif rerank:
+        status_msg = "[cyan]Retrieving and re-ranking matches..."
+        tag = " [dim](Re-ranked)[/dim]"
+    else:
+        status_msg = "[cyan]Retrieving semantic matches..."
+        tag = ""
+
     with console.status(status_msg, spinner="dots"):
-        results = ask(client, query, k=k, rerank=rerank)
+        results = ask(client, query, k=k, hybrid=hybrid, rerank=rerank)
 
     if not results:
         console.print("[yellow]No matching passages found.[/yellow]")
         return
 
-    rerank_tag = " [dim](Re-ranked)[/dim]" if rerank else ""
-    console.print(f"\n[bold]Top {len(results)} Chunks for:[/bold] [italic]\"{query}\"[/italic]{rerank_tag}\n")
+    console.print(f"\n[bold]Top {len(results)} Chunks for:[/bold] [italic]\"{query}\"[/italic]{tag}\n")
     for idx, r in enumerate(results, 1):
         payload = r.payload or {}
         title = payload.get("title", "Unknown")
@@ -108,16 +123,24 @@ def cmd_search(query: str, k: int = 3, rerank: bool = False) -> None:
         url = payload.get("url", "")
         text = payload.get("text", "")
         display_title = breadcrumb if breadcrumb else title
-        score_label = "Re-rank Score" if rerank else "Score"
+        score_label = "Re-rank Score" if rerank else "RRF Score" if hybrid else "Score"
         score_color = "green" if r.score >= 0.70 else "yellow" if r.score >= 0.50 else "red"
         header = f"[{idx}] {display_title} — {score_label}: [{score_color}]{r.score:.4f}[/{score_color}]"
         console.print(Panel(f"[dim]{url}[/dim]\n\n{text}", title=header, border_style="dim"))
 
 
-def cmd_ask(query: str, k: int = 3, rerank: bool = False) -> None:
-    status_msg = "[cyan]Retrieving and re-ranking knowledge..." if rerank else "[cyan]Retrieving knowledge..."
+def cmd_ask(query: str, k: int = 3, hybrid: bool = False, rerank: bool = False) -> None:
+    if hybrid and rerank:
+        status_msg = "[cyan]Retrieving knowledge (Hybrid + Re-rank)..."
+    elif hybrid:
+        status_msg = "[cyan]Retrieving knowledge (Hybrid: Dense + BM25)..."
+    elif rerank:
+        status_msg = "[cyan]Retrieving and re-ranking knowledge..."
+    else:
+        status_msg = "[cyan]Retrieving knowledge..."
+
     with console.status(status_msg, spinner="dots"):
-        chunks = ask(client, query, k=k, rerank=rerank)
+        chunks = ask(client, query, k=k, hybrid=hybrid, rerank=rerank)
 
     if not chunks:
         console.print("[yellow]No relevant sources found in database.[/yellow]")
@@ -148,7 +171,8 @@ def cmd_ask(query: str, k: int = 3, rerank: bool = False) -> None:
     cite_table = Table(title="Sources Cited", border_style="dim", show_header=True)
     cite_table.add_column("Ref", style="bold cyan", width=6)
     cite_table.add_column("Article", style="bold")
-    cite_table.add_column("Re-rank Score" if rerank else "Similarity Score", justify="right")
+    score_col_name = "Re-rank Score" if rerank else "RRF Score" if hybrid else "Similarity Score"
+    cite_table.add_column(score_col_name, justify="right")
     cite_table.add_column("URL", style="dim underline")
 
     for idx, c in enumerate(chunks, 1):
@@ -201,10 +225,18 @@ def cmd_ingest_dump(limit_str: str = "all", reset: bool = False, batch_size: int
     console.print(f"[bold green]Bulk ingestion complete: {indexed:,} chunks indexed into '{COLLECTION_NAME}'.[/bold green]")
 
 
-def cmd_eval(k: int = 5, rerank: bool = False, save_report: bool = True) -> None:
-    rerank_msg = " [dim](with Re-ranker)[/dim]" if rerank else ""
-    console.print(f"[bold cyan]Running SER Retrieval Benchmark across {len(BENCHMARK_DATASET)} canonical queries (k={k}){rerank_msg}...[/bold cyan]\n")
-    scorecard, results = run_benchmark(client, k=k, rerank=rerank)
+def cmd_eval(k: int = 5, hybrid: bool = False, rerank: bool = False, save_report: bool = True) -> None:
+    if hybrid and rerank:
+        tag = " [dim](Hybrid + Re-ranker)[/dim]"
+    elif hybrid:
+        tag = " [dim](Hybrid: Dense + BM25)[/dim]"
+    elif rerank:
+        tag = " [dim](with Re-ranker)[/dim]"
+    else:
+        tag = ""
+
+    console.print(f"[bold cyan]Running SER Retrieval Benchmark across {len(BENCHMARK_DATASET)} canonical queries (k={k}){tag}...[/bold cyan]\n")
+    scorecard, results = run_benchmark(client, k=k, hybrid=hybrid, rerank=rerank)
     render_console_report(scorecard, results, console)
     if save_report:
         report_path = Path("reports/eval_results.md")
@@ -216,10 +248,10 @@ def show_help() -> None:
     help_table = Table(title="Available Commands", border_style="cyan")
     help_table.add_column("Command", style="bold yellow")
     help_table.add_column("Description")
-    help_table.add_row(r"<question> \[--rerank]", "Ask any question (runs full RAG with local Ollama; add --rerank for cross-encoder)")
-    help_table.add_row(r"/search <query> \[--rerank]", "Semantic search only (shows matching chunks and scores; optional --rerank)")
-    help_table.add_row(r"/ask <question> \[--rerank]", "Full RAG answer with optional cross-encoder re-ranking")
-    help_table.add_row(r"/eval \[k] \[--rerank]", "Run automated benchmark measuring Hit Rate and latency")
+    help_table.add_row(r"<question> \[--hybrid] \[--rerank]", "Ask any question (runs full RAG with local Ollama; add --hybrid / --rerank)")
+    help_table.add_row(r"/search <query> \[--hybrid] \[--rerank]", "Semantic search only (shows matching chunks and scores; optional --hybrid / --rerank)")
+    help_table.add_row(r"/ask <question> \[--hybrid] \[--rerank]", "Full RAG answer with optional hybrid search and cross-encoder re-ranking")
+    help_table.add_row(r"/eval \[k] \[--hybrid] \[--rerank]", "Run automated benchmark measuring Hit Rate and latency")
     help_table.add_row(r"/ingest-wiki <title>", "Crawl and index a Wikipedia article live by title")
     help_table.add_row(r"/download-dump", "Download official Simple Wikipedia compressed dump (339 MB)")
     help_table.add_row(r"/ingest-dump \[N]", "Stream-ingest N articles from dump (default: 500)")
@@ -242,12 +274,12 @@ def main() -> None:
             cmd_stats()
             return
         elif first_arg in ("eval", "benchmark", "--eval"):
-            clean_args, rerank = _extract_rerank_flag(sys.argv[2:])
+            clean_args, hybrid, rerank = _extract_search_flags(sys.argv[2:])
             k = 5
             for a in clean_args:
                 if a.isdigit():
                     k = int(a)
-            cmd_eval(k=k, rerank=rerank)
+            cmd_eval(k=k, hybrid=hybrid, rerank=rerank)
             return
         elif first_arg == "download-dump":
             cmd_download_dump()
@@ -263,17 +295,17 @@ def main() -> None:
             cmd_ingest_dump(limit, reset=reset)
             return
         elif first_arg == "search" and len(sys.argv) > 2:
-            clean_args, rerank = _extract_rerank_flag(sys.argv[2:])
-            cmd_search(" ".join(clean_args), rerank=rerank)
+            clean_args, hybrid, rerank = _extract_search_flags(sys.argv[2:])
+            cmd_search(" ".join(clean_args), hybrid=hybrid, rerank=rerank)
             return
         elif first_arg == "ask" and len(sys.argv) > 2:
-            clean_args, rerank = _extract_rerank_flag(sys.argv[2:])
-            cmd_ask(" ".join(clean_args), rerank=rerank)
+            clean_args, hybrid, rerank = _extract_search_flags(sys.argv[2:])
+            cmd_ask(" ".join(clean_args), hybrid=hybrid, rerank=rerank)
             return
         else:
-            # Direct query: ser "What is physics?" [--rerank]
-            clean_args, rerank = _extract_rerank_flag(sys.argv[1:])
-            cmd_ask(" ".join(clean_args), rerank=rerank)
+            # Direct query: ser "What is physics?" [--hybrid] [--rerank]
+            clean_args, hybrid, rerank = _extract_search_flags(sys.argv[1:])
+            cmd_ask(" ".join(clean_args), hybrid=hybrid, rerank=rerank)
             return
 
     # Interactive REPL mode (when run without arguments)
@@ -294,9 +326,9 @@ def main() -> None:
                 cmd_stats()
             elif user_input.lower().startswith("/eval") or user_input.lower().startswith("/benchmark"):
                 parts = user_input.split()
-                clean_parts, rerank = _extract_rerank_flag(parts[1:])
+                clean_parts, hybrid, rerank = _extract_search_flags(parts[1:])
                 k = int(clean_parts[0]) if clean_parts and clean_parts[0].isdigit() else 5
-                cmd_eval(k=k, rerank=rerank)
+                cmd_eval(k=k, hybrid=hybrid, rerank=rerank)
             elif user_input.lower() == "/download-dump":
                 cmd_download_dump()
             elif user_input.lower().startswith("/ingest-dump"):
@@ -314,21 +346,21 @@ def main() -> None:
             elif user_input.lower().startswith("/search"):
                 parts = user_input.split(maxsplit=1)
                 if len(parts) > 1:
-                    clean_parts, rerank = _extract_rerank_flag(parts[1].split())
-                    cmd_search(" ".join(clean_parts), rerank=rerank)
+                    clean_parts, hybrid, rerank = _extract_search_flags(parts[1].split())
+                    cmd_search(" ".join(clean_parts), hybrid=hybrid, rerank=rerank)
                 else:
-                    console.print("[red]Usage: /search <query> [--rerank][/red]")
+                    console.print("[red]Usage: /search <query> [--hybrid] [--rerank][/red]")
             elif user_input.lower().startswith("/ask"):
                 parts = user_input.split(maxsplit=1)
                 if len(parts) > 1:
-                    clean_parts, rerank = _extract_rerank_flag(parts[1].split())
-                    cmd_ask(" ".join(clean_parts), rerank=rerank)
+                    clean_parts, hybrid, rerank = _extract_search_flags(parts[1].split())
+                    cmd_ask(" ".join(clean_parts), hybrid=hybrid, rerank=rerank)
                 else:
-                    console.print("[red]Usage: /ask <question> [--rerank][/red]")
+                    console.print("[red]Usage: /ask <question> [--hybrid] [--rerank][/red]")
             else:
                 # Default: any plain text input is treated as a question
-                clean_parts, rerank = _extract_rerank_flag(user_input.split())
-                cmd_ask(" ".join(clean_parts), rerank=rerank)
+                clean_parts, hybrid, rerank = _extract_search_flags(user_input.split())
+                cmd_ask(" ".join(clean_parts), hybrid=hybrid, rerank=rerank)
 
         except (KeyboardInterrupt, EOFError):
             console.print("\n[cyan]Goodbye![/cyan]")

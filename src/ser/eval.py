@@ -448,11 +448,12 @@ def evaluate_query(
     qdrant_client: Any,
     case: BenchmarkCase,
     k: int = 5,
+    hybrid: bool = False,
     rerank: bool = False,
 ) -> QueryEvalResult:
     """Executes a single benchmark query and measures accuracy & latency."""
     t0 = time.perf_counter()
-    chunks = ask(qdrant_client, query=case.query, k=k, rerank=rerank)
+    chunks = ask(qdrant_client, query=case.query, k=k, hybrid=hybrid, rerank=rerank)
     elapsed_ms = (time.perf_counter() - t0) * 1000.0
 
     retrieved_titles = [c.payload.get("title", "") for c in chunks]
@@ -494,6 +495,7 @@ def run_benchmark(
     qdrant_client: Any = client,
     k: int = 5,
     cases: Optional[list[BenchmarkCase]] = None,
+    hybrid: bool = False,
     rerank: bool = False,
 ) -> tuple[BenchmarkScorecard, list[QueryEvalResult]]:
     """Runs the full evaluation benchmark across all test queries."""
@@ -501,7 +503,7 @@ def run_benchmark(
     results: list[QueryEvalResult] = []
 
     for case in benchmark_cases:
-        res = evaluate_query(qdrant_client, case, k=k, rerank=rerank)
+        res = evaluate_query(qdrant_client, case, k=k, hybrid=hybrid, rerank=rerank)
         results.append(res)
 
     total = len(results)

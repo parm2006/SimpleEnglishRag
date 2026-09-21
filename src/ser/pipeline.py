@@ -5,6 +5,7 @@ from qdrant_client import QdrantClient, models
 
 from ser.db import COLLECTION_NAME, insert_points, search_query
 from ser.embed import embed_query
+from ser.hybrid import hybrid_search
 from ser.ingest import Document
 from ser.points import iter_chunks, iter_point_batches
 from ser.rerank import rerank_points
@@ -54,12 +55,17 @@ def ask(
     client: QdrantClient,
     query: str,
     k: int = 5,
+    hybrid: bool = False,
     rerank: bool = False,
 ) -> list[models.ScoredPoint]:
-    """Retrieves top-k chunks from Qdrant with optional 2nd-stage cross-encoder re-ranking."""
+    """Retrieves top-k chunks from Qdrant with optional hybrid search and 2nd-stage cross-encoder re-ranking."""
     query_vector = embed_query(query)
-    # Always fetch a candidate pool (15 candidates) from Qdrant
-    candidates = search_query(client, query_vector=query_vector, k=max(k, 15))
+    if hybrid:
+        candidates = hybrid_search(client, query=query, query_vector=query_vector, k=max(k, 15))
+    else:
+        # Fetch candidate pool (15 candidates) from Qdrant dense vectors
+        candidates = search_query(client, query_vector=query_vector, k=max(k, 15))
+
     if rerank:
         return rerank_points(query, candidates, top_k=k)
     return candidates[:k]

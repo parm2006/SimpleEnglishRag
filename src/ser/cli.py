@@ -132,23 +132,35 @@ def cmd_download_dump() -> None:
         console.print(f"[red]Download failed: {e}[/red]")
 
 
-def cmd_ingest_dump(limit_str: str = "500") -> None:
-    dump_path = Path("data/simplewiki-latest-pages-articles.xml.bz2")
+def cmd_ingest_dump(limit_str: str = "all", reset: bool = False, batch_size: int = 128) -> None:
+    from ser.db import PROJECT_ROOT
+    dump_path = PROJECT_ROOT / "data" / "simplewiki-latest-pages-articles.xml.bz2"
     if not dump_path.exists():
-        console.print("[yellow]Dump file not found in data/. Run [bold]/download-dump[/bold] first.[/yellow]")
+        console.print(f"[yellow]Dump file not found at {dump_path}. Run [bold]/download-dump[/bold] first.[/yellow]")
         return
 
-    try:
-        limit = int(limit_str) if limit_str else None
-    except ValueError:
-        limit = 500
+    limit = None
+    if limit_str and limit_str.lower() not in ("all", "none", "full"):
+        try:
+            limit = int(limit_str)
+        except ValueError:
+            limit = None
 
-    console.print(f"[cyan]Streaming up to {limit or 'all'} articles from {dump_path}...[/cyan]")
-    checkpoint_file = Path("data/ingest_checkpoint.json")
-    articles_stream = iter_dump_articles(dump_path, max_articles=limit, checkpoint_path=checkpoint_file)
+    checkpoint_file = PROJECT_ROOT / "data" / "ingest_checkpoint.json"
+    target_desc = f"{limit:,} articles" if limit else "ENTIRE Simple English Wikipedia corpus (~238k articles)"
+    console.print(f"[cyan]Streaming and indexing {target_desc} into Qdrant Cloud...[/cyan]")
+    if reset:
+        console.print("[yellow]Reset flag enabled: Starting from article #1 (clearing checkpoint)[/yellow]")
 
-    indexed = index_documents(articles_stream, client=client, batch_size=64)
-    console.print(f"[bold green]Bulk ingestion complete: {indexed} chunks indexed into '{COLLECTION_NAME}'.[/bold green]")
+    articles_stream = iter_dump_articles(
+        dump_path,
+        max_articles=limit,
+        checkpoint_path=checkpoint_file,
+        reset=reset,
+    )
+
+    indexed = index_documents(articles_stream, client=client, batch_size=batch_size)
+    console.print(f"[bold green]Bulk ingestion complete: {indexed:,} chunks indexed into '{COLLECTION_NAME}'.[/bold green]")
 
 
 def show_help() -> None:
@@ -185,8 +197,11 @@ def main() -> None:
             cmd_ingest_wiki(" ".join(sys.argv[2:]))
             return
         elif first_arg == "ingest-dump":
-            limit = sys.argv[2] if len(sys.argv) > 2 else "500"
-            cmd_ingest_dump(limit)
+            args = sys.argv[2:]
+            reset = "--reset" in args
+            args = [a for a in args if a != "--reset"]
+            limit = args[0] if args else "all"
+            cmd_ingest_dump(limit, reset=reset)
             return
         elif first_arg == "search" and len(sys.argv) > 2:
             cmd_search(" ".join(sys.argv[2:]))
@@ -218,9 +233,11 @@ def main() -> None:
             elif user_input.lower() == "/download-dump":
                 cmd_download_dump()
             elif user_input.lower().startswith("/ingest-dump"):
-                parts = user_input.split(maxsplit=1)
-                limit = parts[1] if len(parts) > 1 else "500"
-                cmd_ingest_dump(limit)
+                parts = user_input.split()
+                reset = "--reset" in parts
+                clean_parts = [p for p in parts[1:] if p != "--reset"]
+                limit = clean_parts[0] if clean_parts else "all"
+                cmd_ingest_dump(limit, reset=reset)
             elif user_input.lower().startswith("/ingest-wiki"):
                 parts = user_input.split(maxsplit=1)
                 if len(parts) > 1:

@@ -61,8 +61,20 @@ def init_collection(client: QdrantClient) -> None:
         )
 
 
-def insert_points(client: QdrantClient, points: list[models.PointStruct]) -> None:
-    client.upsert(collection_name=COLLECTION_NAME, points=points)
+def insert_points(
+    client: QdrantClient, points: list[models.PointStruct], max_retries: int = 5
+) -> None:
+    import time
+    for attempt in range(1, max_retries + 1):
+        try:
+            client.upsert(collection_name=COLLECTION_NAME, points=points, wait=True)
+            return
+        except Exception as e:
+            if attempt == max_retries:
+                raise
+            delay = min(2 ** attempt, 30)
+            print(f"[Warning] Upsert failed (attempt {attempt}/{max_retries}): {e}. Retrying in {delay}s...")
+            time.sleep(delay)
 
 
 def search_query(

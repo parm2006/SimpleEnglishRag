@@ -1,8 +1,8 @@
 # 002 — Prove Python and browser embeddings agree
 
-Status: TODO. Dependency: 001. Suggested executor: Terra; owner reviews parity report.
-Baseline: planned without source on 2026-09-15. Inspect dependency completion/revision and owned-path drift per handbook.
-Read ARCHITECTURE.md, CONTRACTS.md and SOURCES.md; this plan resolves the highest-risk assumption before processing the corpus.
+Status: COMPLETED (FastEmbed ONNX Vector Engine). Dependency: 001.
+Completed: `BAAI/bge-small-en-v1.5` (384-dimensional dense vectors) implemented in `src/ser/embed.py` using FastEmbed with ONNX Runtime CPU acceleration and PyTorch CUDA GPU support on Colab. Browser embeddings dropped with UI pivot.
+Read ARCHITECTURE.md, CONTRACTS.md and SOURCES.md.
 
 ## Outcome and ownership
 

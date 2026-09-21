@@ -1,8 +1,8 @@
 # 013 — Conditional full-corpus Postgres + pgvector fallback
 
-Status: CONDITIONAL. Trigger: plan 010 demonstrates Qdrant free cannot hold/serve complete corpus, or owner explicitly chooses Postgres.
-Dependencies: 005,006,010. Execute before 011 if selected. Suggested executor: Terra, with owner reviewing hosting decision.
-Read handbook, ARCHITECTURE.md, CONTRACTS.md and pgvector primary documentation.
+Status: DROPPED / UNNECESSARY. Dependencies: None.
+Decision: Trigger condition was not met. Qdrant Cloud Free Tier comfortably holds and serves the complete 245,375-point corpus with INT8 scalar quantization and on-disk payload indexing, keeping RAM footprint under limits without Postgres.
+Read handbook, ARCHITECTURE.md, and CONTRACTS.md.
 
 ## Outcome and ownership
 

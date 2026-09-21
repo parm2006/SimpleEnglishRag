@@ -1,7 +1,8 @@
 # 007 — Public search API with bounded database access
 
-Status: TODO. Dependencies: 001,002,006. Suggested executor: Terra; owner reviews access boundary.
-Read handbook, ARCHITECTURE.md, CONTRACTS.md API section and SOURCES.md. Inspect actual locked Wrangler/TS APIs.
+Status: DROPPED / REPLACED BY MCP SERVER. Dependencies: 001, 002, 006.
+Decision: Public Cloudflare REST API explicitly dropped per architecture pivot. Replaced by direct Python client API, global CLI (`ser search`), and official Model Context Protocol server (`src/ser/mcp_server.py`).
+Read handbook, ARCHITECTURE.md, and CONTRACTS.md.
 
 ## Outcome and ownership
 

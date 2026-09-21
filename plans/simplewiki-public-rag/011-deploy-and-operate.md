@@ -1,8 +1,8 @@
 # 011 — Deploy the shared public corpus and site
 
-Status: TODO. Dependencies: 007,008,010 GO; 009 if generated answers enabled; 013 instead if Postgres selected.
-Suggested executor: Terra for config/tests; owner for account credentials and public release.
-Read handbook, ARCHITECTURE.md, CONTRACTS.md and provider docs linked in SOURCES.md.
+Status: DROPPED (Replaced by Local CLI & MCP Deployment). Dependencies: None.
+Decision: Public website and Cloudflare Worker deployment dropped per architecture pivot. Operationalized locally as a global system CLI (`ser`) via `uv tool install --editable .` and registered as an MCP server in Google Antigravity IDE (`mcp_config.json`).
+Read handbook, ARCHITECTURE.md, CONTRACTS.md.
 
 ## Outcome and ownership
 

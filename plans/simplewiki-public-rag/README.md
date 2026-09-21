@@ -24,12 +24,12 @@ Per explicit user decisions, the following originally planned components have be
 | **Live Wikipedia Ingestion** | Phase 1 | ✅ **Done** | `ser ingest-wiki "<title>"` fetches, chunks, embeds, and uploads live articles in 1.5 seconds. |
 | **Local Ollama Cited Generation** | Phase 2 | ✅ **Done** | Streaming generation with strict `[1]`, `[2]` citations, source references table, and 0.40 confidence guardrail. |
 | **Global CLI & Interactive REPL** | Phase 3 | ✅ **Done** | Installed globally (`ser`), callable from any directory on the PC. |
-| **1-Click Colab GPU Ingestion** | Bonus | ✅ **Done** | [`colab_ingest.ipynb`](../../colab_ingest.ipynb) for 15-minute free T4 GPU ingestion. |
+| **1-Click Colab GPU Ingestion** | Bonus | ✅ **Done** | [`colab_ingest.ipynb`](../../colab_ingest.ipynb) & [`colab_standalone.ipynb`](../../colab_standalone.ipynb) for fast T4 GPU ingestion. |
 | **Comprehensive Documentation** | Showcase | ✅ **Done** | Root [`README.md`](../../README.md) and [`AGENTS.md`](../../AGENTS.md) with architecture diagrams and API specs. |
-| **Core Knowledge Base Ingestion** | Active | ✅ **12,671 Chunks** | 2,700 foundational articles (Science, History, Computing, Math, Philosophy) live in Qdrant Cloud. |
-| **Full Corpus Colab GPU Execution** | Active | ⏳ **In Progress** | Running `colab_ingest.ipynb` to complete the remaining ~235k articles. |
+| **Core Knowledge Base Ingestion** | Phase 1 | ✅ **Done** | 2,700 foundational articles (Science, History, Computing, Math, Philosophy) ingested locally. |
+| **Full Corpus Colab GPU Execution** | Phase 1 | ✅ **245,375 Chunks** | Ingested via [`colab_standalone.ipynb`](../../colab_standalone.ipynb) on T4 GPU into Qdrant Cloud. Status: `green`. |
+| **MCP Server (Model Context Protocol)** | Expansion | ✅ **Done** | [`src/ser/mcp_server.py`](../../src/ser/mcp_server.py) exposing `search_wikipedia`, `ask_wikipedia`, and `index_article` to Google Antigravity, Claude Desktop, and Cursor. |
 | **Evaluation Suite (`eval.py`)** | Phase 4.2 | ⏳ **TODO** | Automated benchmark measuring Hit Rate @ k, MRR, and p50/p95 latency across canonical test queries. |
-| **MCP Server (Model Context Protocol)** | Expansion | ⏳ **TODO** | FastMCP server exposing `search_wikipedia`, `ask_wikipedia`, and `index_article` to Claude Desktop & Cursor. |
 | **Hybrid Search (Dense + BM25)** | Phase 4.1 | ⏳ **TODO** | FastEmbed BM25 sparse vectors paired with dense vectors via Reciprocal Rank Fusion (RRF). |
 | **Universal Ingestion ("Ingest Anything")**| Phase 3.2 | ⏳ **TODO** | Ingestion source adapters for local PDFs, Markdown vaults, and plain text folders. |
 
@@ -37,6 +37,7 @@ Per explicit user decisions, the following originally planned components have be
 
 ## 3. Active Next Priorities
 
-1. **Colab GPU Full Dump Ingestion**: Complete the remaining Wikipedia dump into Qdrant Cloud via free T4 GPU.
-2. **Evaluation Suite (`eval.py`)**: Build and run an evaluation benchmark on the Qdrant Cloud collection.
-3. **MCP Server**: Implement the FastMCP server for Claude Desktop / Cursor integration.
+1. **Evaluation Suite (`eval.py`)**: Build and run an automated benchmark measuring Hit Rate @ k, MRR, and p50/p95 latency across the 245,375-point Qdrant Cloud collection.
+2. **Hybrid Search (Dense + BM25)**: FastEmbed BM25 sparse vectors paired with dense vectors via Reciprocal Rank Fusion (RRF).
+3. **Universal Ingestion ("Ingest Anything")**: Expand beyond Wikipedia to local PDFs, Markdown notes, and raw text folders.
+

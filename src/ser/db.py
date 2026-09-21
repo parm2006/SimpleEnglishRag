@@ -21,13 +21,17 @@ COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "simple_wiki")
 
 
 def get_client() -> QdrantClient:
-    if QDRANT_STORAGE == "cloud" and QDRANT_URL:
-        return QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
-    elif QDRANT_STORAGE == "memory":
+    storage = os.getenv("QDRANT_STORAGE", QDRANT_STORAGE).lower()
+    url = os.getenv("QDRANT_URL", QDRANT_URL)
+    api_key = os.getenv("QDRANT_API_KEY", QDRANT_API_KEY)
+    if storage == "cloud" and url:
+        return QdrantClient(url=url, api_key=api_key)
+    elif storage == "memory":
         return QdrantClient(":memory:")
     # Default: local SSD storage
     os.makedirs(QDRANT_LOCAL_PATH, exist_ok=True)
     return QdrantClient(path=QDRANT_LOCAL_PATH)
+
 
 
 client = get_client()

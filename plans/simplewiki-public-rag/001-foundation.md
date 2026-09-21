@@ -1,7 +1,8 @@
 # 001 — Repository, tooling and executable contracts
 
-Status: TODO. Dependencies: none. Suggested executor: Terra; routine fixtures may use Luna.
-Planned-at baseline: 2026-09-15, no Git repository or code. Read EXECUTOR-HANDBOOK.md for baseline hash and drift rules, plus ARCHITECTURE.md and CONTRACTS.md.
+Status: COMPLETED (Adapted for `ser` modular engine). Dependencies: none.
+Completed: Modular Python engine established with `uv`, `pyproject.toml`, `src/ser/` architecture, global CLI entrypoint (`ser`), dataclass models, and environment configuration.
+Planned-at baseline: 2026-09-15. Read EXECUTOR-HANDBOOK.md for baseline hash and drift rules, plus ARCHITECTURE.md and CONTRACTS.md.
 
 ## Outcome and ownership
 

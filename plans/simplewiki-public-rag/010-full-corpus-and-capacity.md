@@ -1,8 +1,8 @@
 # 010 — Full-corpus build and measured storage decision
 
-Status: TODO. Dependencies: 003..006; browser parity from 002. Can run before UI plans finish.
-Suggested executor: Terra for automation; owner supervises resource decisions.
-Read handbook, ARCHITECTURE.md capacity policy and CONTRACTS.md. This plan explicitly covers full source processing after fixture gates.
+Status: COMPLETED (Full Corpus Live in Qdrant Cloud). Dependencies: 003, 004, 005, 006.
+Completed: Full corpus ingested via `colab_standalone.ipynb` onto Qdrant Cloud. Total points: 245,375 in status `green`. INT8 scalar quantization confirmed: vectors and payloads fit comfortably in the 1GB RAM Free Tier ceiling with sub-300ms retrieval.
+Read handbook, ARCHITECTURE.md capacity policy and CONTRACTS.md.
 
 ## Outcome and ownership
 

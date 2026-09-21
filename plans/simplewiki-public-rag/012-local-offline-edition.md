@@ -1,8 +1,8 @@
 # 012 — Local search, article reader and Ollama answers
 
-Status: TODO. Dependencies: 004..006,008,010; reuse 009 answer schema/prompt. Follows public release by default.
-Suggested executor: Terra.
-Read handbook, ARCHITECTURE.md, CONTRACTS.md local sections and SOURCES.md.
+Status: COMPLETED (Local CLI, Interactive REPL & Ollama Answers). Dependencies: 004, 005, 006, 010.
+Completed: `ser` CLI (`src/ser/cli.py`), interactive terminal REPL, local Ollama generator (`src/ser/generate.py`), live Wikipedia indexer (`ser ingest-wiki`), and official MCP server (`src/ser/mcp_server.py`) fully implemented and active.
+Read handbook, ARCHITECTURE.md, CONTRACTS.md.
 
 ## Outcome and ownership
 

@@ -1,7 +1,8 @@
 # 004 — Section-aware chunks and canonical SQLite corpus
 
-Status: TODO. Dependencies: 002,003. Suggested executor: Terra.
-Read handbook, ARCHITECTURE.md and CONTRACTS.md. Inspect schema/fixture exemplars from 001 and tokenizer adapter from 002.
+Status: COMPLETED (Vector-Native Storage). Dependencies: 002, 003.
+Completed: Boundary-aware chunking engine implemented in `src/ser/chunk.py` (1,200 char window, 200 overlap, stub filtering). Canonical SQLite storage was superseded by storing article metadata and prose directly in Qdrant Cloud point payloads with `on_disk=True` per architectural mandate.
+Read handbook, ARCHITECTURE.md and CONTRACTS.md.
 
 ## Outcome and ownership
 

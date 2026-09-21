@@ -1,7 +1,8 @@
 # 009 — Optional answers with a visitor's Gemini key
 
-Status: TODO. Dependencies: 006,008. Suggested executor: Terra; Luna may build Settings panel against frozen interface.
-Read handbook, ARCHITECTURE.md, CONTRACTS.md answer section and current provider docs.
+Status: COMPLETED (Local Ollama Grounded Generation). Dependencies: 006.
+Completed: Implemented in `src/ser/generate.py`. Strict citation footnotes (`[1]`, `[2]`), sources table, and 0.40 confidence guardrail running locally via Ollama (`llama3.2:3b`, `qwen2.5:3b`). External Gemini browser API key requirement replaced with private zero-cost local LLM inference.
+Read handbook, ARCHITECTURE.md, CONTRACTS.md.
 
 ## Outcome and ownership
 

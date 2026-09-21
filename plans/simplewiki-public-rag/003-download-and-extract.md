@@ -1,7 +1,8 @@
 # 003 — Download and clean the complete article snapshot
 
-Status: TODO. Dependencies: 001 and 002 (frozen configuration). Suggested executor: Terra.
-Read handbook baseline/drift rules, ARCHITECTURE.md and CONTRACTS.md. No existing parser exemplar predates 001.
+Status: COMPLETED (Streaming Wikipedia Dump Parser). Dependencies: 001, 002.
+Completed: `download_dump()` and line-streaming `WikiDumpReader` implemented in `src/ser/dump.py` and `colab_standalone.ipynb`. Streaming decompression, Wikimedia User-Agent handling, regex wikitext cleaning, and atomic JSON checkpointing (`data/ingest_checkpoint.json`).
+Read handbook baseline/drift rules, ARCHITECTURE.md and CONTRACTS.md.
 
 ## Outcome and ownership
 

@@ -1,7 +1,8 @@
 # 008 — Public browser search and readable sources
 
-Status: TODO. Dependencies: 002,007. Suggested executor: Terra for worker/state; Luna for scoped presentational components.
-Read handbook, ARCHITECTURE.md and CONTRACTS.md. Reuse packages/embedding from 002 and API fixtures from 007.
+Status: DROPPED. Dependencies: None.
+Decision: Public browser frontend permanently dropped per user instruction. `ser` operates purely as a local CLI (`ser`), interactive terminal REPL, Python library, and MCP server.
+Read handbook, ARCHITECTURE.md and CONTRACTS.md.
 
 ## Outcome and ownership
 

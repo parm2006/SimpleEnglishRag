@@ -1,7 +1,8 @@
 # 005 — Resumable local embedding jobs
 
-Status: TODO. Dependencies: 002,004. Suggested executor: Terra.
-Read handbook, ARCHITECTURE.md and CONTRACTS.md. Inspect model wrapper from 002 and manifest/shard writer from 004.
+Status: COMPLETED (Streaming GPU & CPU Ingestion Pipeline). Dependencies: 002, 004.
+Completed: Micro-batched point construction (`src/ser/points.py`), pipelined background upload queue (`src/ser/pipeline.py`), and 100% standalone GPU-accelerated notebook (`colab_standalone.ipynb`) created. Streams embeddings directly into Qdrant Cloud at ~600-900 chunks/sec with atomic state recovery.
+Read handbook, ARCHITECTURE.md and CONTRACTS.md.
 
 ## Outcome and ownership
 

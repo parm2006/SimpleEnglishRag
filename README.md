@@ -1,9 +1,11 @@
 # `ser` — Simple English RAG (Search & Extraction Engine)
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/parm2006/SimpleEnglishRag/blob/main/colab_standalone.ipynb)
 [![Vector Store](https://img.shields.io/badge/vector%20db-Qdrant%20Cloud-red.svg)](https://qdrant.tech/)
 [![Embeddings](https://img.shields.io/badge/embeddings-FastEmbed%20ONNX-green.svg)](https://github.com/qdrant/fastembed)
 [![Local LLM](https://img.shields.io/badge/generator-Ollama%20Local-purple.svg)](https://ollama.ai/)
+[![MCP Server](https://img.shields.io/badge/MCP-Model%20Context%20Protocol-blueviolet.svg)](https://modelcontextprotocol.io/)
 [![CLI](https://img.shields.io/badge/CLI-Global%20Executable-orange.svg)](https://github.com/parm2006/SimpleEnglishRag)
 
 `ser` is a local-first, agent-friendly Retrieval-Augmented Generation (RAG) engine and global command-line utility built over the complete Simple English Wikipedia corpus. 
@@ -240,6 +242,72 @@ Deterministic UUIDs are generated with `uuid.uuid5(uuid.NAMESPACE_DNS, chunk_id)
 | **RAM Footprint** | ~384 bytes/vector $\rightarrow$ ~150 MB RAM for 250k vectors |
 | **Disk Footprint** | ~1.5 KB/chunk $\rightarrow$ ~400–600 MB SSD for entire wiki |
 | **Throughput** | ~30 chunks/sec CPU embedding, overlapping cloud upload |
+
+---
+
+## 1-Click GPU Ingestion in Google Colab
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/parm2006/SimpleEnglishRag/blob/main/colab_standalone.ipynb)
+
+If you don't want to run the full ~245,000-chunk Wikipedia ingestion on your local CPU, use our **100% self-contained Google Colab notebook** ([`colab_standalone.ipynb`](colab_standalone.ipynb)):
+
+- **Zero local dependencies**: Runs entirely in the cloud on a free Google Colab **NVIDIA T4 GPU**.
+- **PyTorch CUDA Acceleration**: Encodes and uploads at **~600–900 chunks/sec** (~15–20 minutes for the entire corpus).
+- **Leak-Proof Security**: Safely supply your Qdrant Cloud URL and API Key via Colab's built-in **Secrets (🔑)** manager so credentials are never committed or exposed.
+- **Auto-Initialization**: Automatically creates the `simple_wiki` collection with INT8 scalar quantization and on-disk storage if it doesn't already exist.
+
+---
+
+## Model Context Protocol (MCP) Integration
+
+`ser` exposes an official Model Context Protocol (MCP) server so AI assistants (Google Antigravity, Cursor, Claude Desktop) can search, answer questions, and index Wikipedia articles natively.
+
+### Available Tools
+- `search_wikipedia(query: str, k: int = 5)`: Semantic search returning similarity scores, article titles, URLs, and excerpt text.
+- `ask_wikipedia(query: str, k: int = 5)`: Full cited RAG generation with footnote badges (`[1]`, `[2]`) and confidence guardrail.
+- `index_article(title: str)`: Fetches a live Wikipedia article by title, chunks, embeds, and indexes it in Qdrant Cloud.
+
+### Configuration
+
+#### Google Antigravity IDE
+In your `~/.gemini/config/mcp_config.json`:
+```json
+{
+  "mcpServers": {
+    "simple-wiki": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "C:\\path\\to\\SimpleEnglishRAG",
+        "run",
+        "python",
+        "-m",
+        "ser.mcp_server"
+      ]
+    }
+  }
+}
+```
+
+#### Claude Desktop
+In your `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "simple-wiki": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "/path/to/SimpleEnglishRAG",
+        "run",
+        "python",
+        "-m",
+        "ser.mcp_server"
+      ]
+    }
+  }
+}
+```
 
 ---
 

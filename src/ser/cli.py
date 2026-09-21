@@ -44,12 +44,20 @@ def show_banner() -> None:
 def cmd_stats() -> None:
     try:
         info = client.get_collection(COLLECTION_NAME)
-        table = Table(title=f"Qdrant Collection: {COLLECTION_NAME}", border_style="magenta")
+        status_str = str(info.status).lower()
+        border_color = "green" if status_str == "green" else "yellow" if status_str == "yellow" else "red"
+        status_badge = (
+            "[bold green]● Healthy (green)[/bold green]"
+            if status_str == "green"
+            else f"[{border_color}]● {info.status}[/{border_color}]"
+        )
+
+        table = Table(title=f"Qdrant Collection: {COLLECTION_NAME}", border_style=border_color)
         table.add_column("Property", style="cyan")
-        table.add_column("Value", style="green")
-        table.add_row("Storage Mode", QDRANT_STORAGE.upper())
-        table.add_row("Points Count", str(info.points_count or 0))
-        table.add_row("Status", str(info.status))
+        table.add_column("Value", style="white")
+        table.add_row("Storage Mode", f"[bold cyan]{QDRANT_STORAGE.upper()}[/bold cyan]")
+        table.add_row("Points Count", f"[bold white]{(info.points_count or 0):,}[/bold white]")
+        table.add_row("Status", status_badge)
         table.add_row("Vector Dimension", "384 (bge-small-en-v1.5)")
         table.add_row("Quantization", "INT8 Scalar (4x RAM reduction)")
         table.add_row("On Disk Vectors", str(info.config.params.vectors.on_disk))

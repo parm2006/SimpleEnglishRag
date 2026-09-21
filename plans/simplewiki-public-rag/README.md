@@ -27,17 +27,16 @@ Per explicit user decisions, the following originally planned components have be
 | **1-Click Colab GPU Ingestion** | Bonus | ✅ **Done** | [`colab_ingest.ipynb`](../../colab_ingest.ipynb) & [`colab_standalone.ipynb`](../../colab_standalone.ipynb) for fast T4 GPU ingestion. |
 | **Comprehensive Documentation** | Showcase | ✅ **Done** | Root [`README.md`](../../README.md) and [`AGENTS.md`](../../AGENTS.md) with architecture diagrams and API specs. |
 | **Core Knowledge Base Ingestion** | Phase 1 | ✅ **Done** | 2,700 foundational articles (Science, History, Computing, Math, Philosophy) ingested locally. |
-| **Full Corpus Colab GPU Execution** | Phase 1 | ✅ **245,375 Chunks** | Ingested via [`colab_standalone.ipynb`](../../colab_standalone.ipynb) on T4 GPU into Qdrant Cloud. Status: `green`. |
+| **Full Corpus Colab GPU Execution** | Phase 1 | ✅ **410,000+ Chunks** | Ingested via [`colab_standalone.ipynb`](../../colab_standalone.ipynb) on T4 GPU into Qdrant Cloud. Status: `green`. |
 | **MCP Server (Model Context Protocol)** | Expansion | ✅ **Done** | [`src/ser/mcp_server.py`](../../src/ser/mcp_server.py) exposing `search_wikipedia`, `ask_wikipedia`, and `index_article` to Google Antigravity, Claude Desktop, and Cursor. |
-| **Evaluation Suite (`eval.py`)** | Phase 4.2 | ⏳ **TODO** | Automated benchmark measuring Hit Rate @ k, MRR, and p50/p95 latency across canonical test queries. |
-| **Hybrid Search (Dense + BM25)** | Phase 4.1 | ⏳ **TODO** | FastEmbed BM25 sparse vectors paired with dense vectors via Reciprocal Rank Fusion (RRF). |
-| **Universal Ingestion ("Ingest Anything")**| Phase 3.2 | ⏳ **TODO** | Ingestion source adapters for local PDFs, Markdown vaults, and plain text folders. |
+| **Evaluation Suite (`eval.py`)** | Phase 4.2 | ✅ **Done** | Automated benchmark: **100% Hit@5**, **86.7% Hit@1**, **0.9150 MRR**, **98.7 ms p50 latency** across 30 domains. |
+| **Universal Ingestion ("Ingest Anything")**| Phase 3.2 | ⏳ **Next** | Ingestion source adapters for local PDFs, Markdown vaults, and plain text folders (`ser ingest`). |
+| **Hybrid Search (Dense + BM25)** | Phase 4.1 | ⏳ **Backlog** | FastEmbed BM25 sparse vectors paired with dense vectors via Reciprocal Rank Fusion (RRF). |
 
 ---
 
 ## 3. Active Next Priorities
 
-1. **Evaluation Suite (`eval.py`)**: Build and run an automated benchmark measuring Hit Rate @ k, MRR, and p50/p95 latency across the 245,375-point Qdrant Cloud collection.
+1. **Universal Ingestion ("Ingest Anything")**: Expand beyond Wikipedia to local PDFs, Markdown vaults, and raw text folders (`ser ingest`).
 2. **Hybrid Search (Dense + BM25)**: FastEmbed BM25 sparse vectors paired with dense vectors via Reciprocal Rank Fusion (RRF).
-3. **Universal Ingestion ("Ingest Anything")**: Expand beyond Wikipedia to local PDFs, Markdown notes, and raw text folders.
 

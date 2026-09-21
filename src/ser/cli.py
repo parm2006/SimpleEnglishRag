@@ -15,6 +15,7 @@ from rich.table import Table
 from ser.db import COLLECTION_NAME, QDRANT_STORAGE, client, init_collection
 from ser.download import download_dump
 from ser.dump import iter_dump_articles
+from ser.eval import BENCHMARK_DATASET, render_console_report, run_benchmark, save_markdown_report
 from ser.generate import get_local_model, stream_answer
 from ser.ingest import fetch_wiki_article
 from ser.pipeline import ask, index_documents
@@ -163,12 +164,23 @@ def cmd_ingest_dump(limit_str: str = "all", reset: bool = False, batch_size: int
     console.print(f"[bold green]Bulk ingestion complete: {indexed:,} chunks indexed into '{COLLECTION_NAME}'.[/bold green]")
 
 
+def cmd_eval(k: int = 5, save_report: bool = True) -> None:
+    console.print(f"[bold cyan]Running SER Retrieval Benchmark across {len(BENCHMARK_DATASET)} canonical queries (k={k})...[/bold cyan]\n")
+    scorecard, results = run_benchmark(client, k=k)
+    render_console_report(scorecard, results, console)
+    if save_report:
+        report_path = Path("reports/eval_results.md")
+        save_markdown_report(scorecard, results, report_path)
+        console.print(f"\n[bold green]✓ Benchmark scorecard saved to: {report_path}[/bold green]")
+
+
 def show_help() -> None:
     help_table = Table(title="Available Commands", border_style="cyan")
     help_table.add_column("Command", style="bold yellow")
     help_table.add_column("Description")
     help_table.add_row("<question>", "Ask any question (runs full RAG with local Ollama)")
     help_table.add_row("/search <query>", "Semantic search only (shows matching chunks and scores)")
+    help_table.add_row("/eval [k]", "Run automated benchmark measuring Hit Rate and latency")
     help_table.add_row("/ingest-wiki <title>", "Crawl and index a Wikipedia article live by title")
     help_table.add_row("/download-dump", "Download official Simple Wikipedia compressed dump (339 MB)")
     help_table.add_row("/ingest-dump [N]", "Stream-ingest N articles from dump (default: 500)")
@@ -189,6 +201,13 @@ def main() -> None:
             return
         elif first_arg in ("stats", "--stats"):
             cmd_stats()
+            return
+        elif first_arg in ("eval", "benchmark", "--eval"):
+            k = 5
+            for a in sys.argv[2:]:
+                if a.isdigit():
+                    k = int(a)
+            cmd_eval(k=k)
             return
         elif first_arg == "download-dump":
             cmd_download_dump()
@@ -230,6 +249,10 @@ def main() -> None:
                 show_help()
             elif user_input.lower() == "/stats":
                 cmd_stats()
+            elif user_input.lower().startswith("/eval") or user_input.lower().startswith("/benchmark"):
+                parts = user_input.split()
+                k = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 5
+                cmd_eval(k=k)
             elif user_input.lower() == "/download-dump":
                 cmd_download_dump()
             elif user_input.lower().startswith("/ingest-dump"):

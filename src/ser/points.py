@@ -24,8 +24,8 @@ def create_points(chunks: list[Chunk]) -> list[models.PointStruct]:
     if not chunks:
         return []
 
-    texts = [c.text for c in chunks]
-    vectors = list(embed_chunks(texts))
+    embed_texts = [c.get_embed_text() for c in chunks]
+    vectors = list(embed_chunks(embed_texts))
 
     points: list[models.PointStruct] = []
     for chunk, vector in zip(chunks, vectors):
@@ -37,6 +37,7 @@ def create_points(chunks: list[Chunk]) -> list[models.PointStruct]:
             "url": chunk.url,
             "chunk_index": chunk.chunk_index,
             "text": chunk.text,
+            "breadcrumb": chunk.breadcrumb,
         }
         points.append(
             models.PointStruct(

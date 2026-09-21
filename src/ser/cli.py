@@ -82,10 +82,12 @@ def cmd_search(query: str, k: int = 3) -> None:
     for idx, r in enumerate(results, 1):
         payload = r.payload or {}
         title = payload.get("title", "Unknown")
+        breadcrumb = payload.get("breadcrumb", "")
         url = payload.get("url", "")
         text = payload.get("text", "")
+        display_title = breadcrumb if breadcrumb else title
         score_color = "green" if r.score >= 0.70 else "yellow" if r.score >= 0.50 else "red"
-        header = f"[{idx}] {title} — Score: [{score_color}]{r.score:.4f}[/{score_color}]"
+        header = f"[{idx}] {display_title} — Score: [{score_color}]{r.score:.4f}[/{score_color}]"
         console.print(Panel(f"[dim]{url}[/dim]\n\n{text}", title=header, border_style="dim"))
 
 

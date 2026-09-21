@@ -50,10 +50,13 @@ def build_context_block(chunks: list[models.ScoredPoint]) -> tuple[str, list[dic
     for idx, c in enumerate(chunks, 1):
         payload = c.payload or {}
         title = payload.get("title", "Unknown")
+        breadcrumb = payload.get("breadcrumb", "")
         url = payload.get("url", "")
         text = payload.get("text", "").strip()
-        sources.append({"index": idx, "title": title, "url": url, "score": c.score})
-        blocks.append(f"[{idx}] Source: {title} ({url})\n{text}")
+
+        source_label = breadcrumb if breadcrumb else title
+        sources.append({"index": idx, "title": source_label, "url": url, "score": c.score})
+        blocks.append(f"[{idx}] Source: {source_label} ({url})\n{text}")
     return "\n\n".join(blocks), sources
 
 

@@ -21,15 +21,17 @@ def search_wikipedia(query:str, limit:int = 3) -> str:
         return "No relevant Wikipedia articles found."
     
     results = []
-    for idx, c in enumerate(chunks,1):
+    for idx, c in enumerate(chunks, 1):
         payload = c.payload or {}
-        title = payload.get("title","Unknown")
-        url = payload.get("url","")
+        title = payload.get("title", "Unknown")
+        breadcrumb = payload.get("breadcrumb", "")
+        url = payload.get("url", "")
         text = payload.get("text", "")
         score = c.score or 0
+        display_title = breadcrumb if breadcrumb else title
 
         results.append(
-            f"[{idx}] {title} (Score: {score:.4f})\nURL: {url}\n{text}\n"
+            f"[{idx}] {display_title} (Score: {score:.4f})\nURL: {url}\n{text}\n"
         )
 
     return "\n---\n".join(results)

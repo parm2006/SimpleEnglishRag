@@ -7,6 +7,7 @@ from ser.db import COLLECTION_NAME, insert_points, search_query
 from ser.embed import embed_query
 from ser.ingest import Document
 from ser.points import iter_chunks, iter_point_batches
+from ser.rerank import rerank_points
 
 
 def index_documents(
@@ -49,7 +50,17 @@ def index_documents(
     return total_chunks
 
 
-def ask(client: QdrantClient, query: str, k: int = 5) -> list[models.ScoredPoint]:
+def ask(
+    client: QdrantClient,
+    query: str,
+    k: int = 5,
+    rerank: bool = False,
+) -> list[models.ScoredPoint]:
+    """Retrieves top-k chunks from Qdrant with optional 2nd-stage cross-encoder re-ranking."""
     query_vector = embed_query(query)
-    return search_query(client, query_vector=query_vector, k=k)
+    points = search_query(client, query_vector=query_vector, k=k)
+    if rerank:
+        return rerank_points(query, points, top_k=k)
+    return points
+
 

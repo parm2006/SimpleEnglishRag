@@ -78,15 +78,29 @@ def cmd_ingest_wiki(title: str) -> None:
     console.print(f"[green]Successfully indexed {count} chunks for '{doc.title}' ({doc.url})[/green]")
 
 
-def cmd_search(query: str, k: int = 3) -> None:
-    with console.status("[cyan]Retrieving semantic matches...", spinner="dots"):
-        results = ask(client, query, k=k)
+def _extract_rerank_flag(args: list[str]) -> tuple[list[str], bool]:
+    """Helper to detect and remove --rerank or -r flag from arguments."""
+    rerank = False
+    clean = []
+    for a in args:
+        if a.lower() in ("--rerank", "-r", "--re-rank"):
+            rerank = True
+        else:
+            clean.append(a)
+    return clean, rerank
+
+
+def cmd_search(query: str, k: int = 3, rerank: bool = False) -> None:
+    status_msg = "[cyan]Retrieving and re-ranking matches..." if rerank else "[cyan]Retrieving semantic matches..."
+    with console.status(status_msg, spinner="dots"):
+        results = ask(client, query, k=k, rerank=rerank)
 
     if not results:
         console.print("[yellow]No matching passages found.[/yellow]")
         return
 
-    console.print(f"\n[bold]Top {len(results)} Chunks for:[/bold] [italic]\"{query}\"[/italic]\n")
+    rerank_tag = " [dim](Re-ranked)[/dim]" if rerank else ""
+    console.print(f"\n[bold]Top {len(results)} Chunks for:[/bold] [italic]\"{query}\"[/italic]{rerank_tag}\n")
     for idx, r in enumerate(results, 1):
         payload = r.payload or {}
         title = payload.get("title", "Unknown")
@@ -94,14 +108,16 @@ def cmd_search(query: str, k: int = 3) -> None:
         url = payload.get("url", "")
         text = payload.get("text", "")
         display_title = breadcrumb if breadcrumb else title
+        score_label = "Re-rank Score" if rerank else "Score"
         score_color = "green" if r.score >= 0.70 else "yellow" if r.score >= 0.50 else "red"
-        header = f"[{idx}] {display_title} — Score: [{score_color}]{r.score:.4f}[/{score_color}]"
+        header = f"[{idx}] {display_title} — {score_label}: [{score_color}]{r.score:.4f}[/{score_color}]"
         console.print(Panel(f"[dim]{url}[/dim]\n\n{text}", title=header, border_style="dim"))
 
 
-def cmd_ask(query: str, k: int = 3) -> None:
-    with console.status("[cyan]Retrieving knowledge...", spinner="dots"):
-        chunks = ask(client, query, k=k)
+def cmd_ask(query: str, k: int = 3, rerank: bool = False) -> None:
+    status_msg = "[cyan]Retrieving and re-ranking knowledge..." if rerank else "[cyan]Retrieving knowledge..."
+    with console.status(status_msg, spinner="dots"):
+        chunks = ask(client, query, k=k, rerank=rerank)
 
     if not chunks:
         console.print("[yellow]No relevant sources found in database.[/yellow]")
@@ -109,9 +125,20 @@ def cmd_ask(query: str, k: int = 3) -> None:
 
     console.print(f"\n[bold cyan]Question:[/bold cyan] {query}\n")
     console.print("[bold green]Answer:[/bold green]")
-
     collected_answer = []
-    for token in stream_answer(query, chunks):
+    # 💬 Bouncing typing dots while the LLM is "thinking"
+    with console.status("[italic cyan]● ● ● Thinking...[/italic cyan]", spinner="dots"):
+        answer_stream = stream_answer(query, chunks)
+        try:
+            first_token = next(answer_stream)
+        except StopIteration:
+            first_token = ""
+    # Once the first token arrives, the spinner clears and streaming begins
+    if first_token:
+        sys.stdout.write(first_token)
+        sys.stdout.flush()
+        collected_answer.append(first_token)
+    for token in answer_stream:
         sys.stdout.write(token)
         sys.stdout.flush()
         collected_answer.append(token)
@@ -121,7 +148,7 @@ def cmd_ask(query: str, k: int = 3) -> None:
     cite_table = Table(title="Sources Cited", border_style="dim", show_header=True)
     cite_table.add_column("Ref", style="bold cyan", width=6)
     cite_table.add_column("Article", style="bold")
-    cite_table.add_column("Similarity Score", justify="right")
+    cite_table.add_column("Re-rank Score" if rerank else "Similarity Score", justify="right")
     cite_table.add_column("URL", style="dim underline")
 
     for idx, c in enumerate(chunks, 1):
@@ -174,9 +201,10 @@ def cmd_ingest_dump(limit_str: str = "all", reset: bool = False, batch_size: int
     console.print(f"[bold green]Bulk ingestion complete: {indexed:,} chunks indexed into '{COLLECTION_NAME}'.[/bold green]")
 
 
-def cmd_eval(k: int = 5, save_report: bool = True) -> None:
-    console.print(f"[bold cyan]Running SER Retrieval Benchmark across {len(BENCHMARK_DATASET)} canonical queries (k={k})...[/bold cyan]\n")
-    scorecard, results = run_benchmark(client, k=k)
+def cmd_eval(k: int = 5, rerank: bool = False, save_report: bool = True) -> None:
+    rerank_msg = " [dim](with Re-ranker)[/dim]" if rerank else ""
+    console.print(f"[bold cyan]Running SER Retrieval Benchmark across {len(BENCHMARK_DATASET)} canonical queries (k={k}){rerank_msg}...[/bold cyan]\n")
+    scorecard, results = run_benchmark(client, k=k, rerank=rerank)
     render_console_report(scorecard, results, console)
     if save_report:
         report_path = Path("reports/eval_results.md")
@@ -188,15 +216,16 @@ def show_help() -> None:
     help_table = Table(title="Available Commands", border_style="cyan")
     help_table.add_column("Command", style="bold yellow")
     help_table.add_column("Description")
-    help_table.add_row("<question>", "Ask any question (runs full RAG with local Ollama)")
-    help_table.add_row("/search <query>", "Semantic search only (shows matching chunks and scores)")
-    help_table.add_row("/eval [k]", "Run automated benchmark measuring Hit Rate and latency")
-    help_table.add_row("/ingest-wiki <title>", "Crawl and index a Wikipedia article live by title")
-    help_table.add_row("/download-dump", "Download official Simple Wikipedia compressed dump (339 MB)")
-    help_table.add_row("/ingest-dump [N]", "Stream-ingest N articles from dump (default: 500)")
-    help_table.add_row("/stats", "Show Qdrant collection size and storage metrics")
-    help_table.add_row("/help", "Show this help table")
-    help_table.add_row("/exit, /quit", "Exit the CLI")
+    help_table.add_row(r"<question> \[--rerank]", "Ask any question (runs full RAG with local Ollama; add --rerank for cross-encoder)")
+    help_table.add_row(r"/search <query> \[--rerank]", "Semantic search only (shows matching chunks and scores; optional --rerank)")
+    help_table.add_row(r"/ask <question> \[--rerank]", "Full RAG answer with optional cross-encoder re-ranking")
+    help_table.add_row(r"/eval \[k] \[--rerank]", "Run automated benchmark measuring Hit Rate and latency")
+    help_table.add_row(r"/ingest-wiki <title>", "Crawl and index a Wikipedia article live by title")
+    help_table.add_row(r"/download-dump", "Download official Simple Wikipedia compressed dump (339 MB)")
+    help_table.add_row(r"/ingest-dump \[N]", "Stream-ingest N articles from dump (default: 500)")
+    help_table.add_row(r"/stats", "Show Qdrant collection size and storage metrics")
+    help_table.add_row(r"/help", "Show this help table")
+    help_table.add_row(r"/exit, /quit", "Exit the CLI")
     console.print(help_table)
 
 
@@ -213,11 +242,12 @@ def main() -> None:
             cmd_stats()
             return
         elif first_arg in ("eval", "benchmark", "--eval"):
+            clean_args, rerank = _extract_rerank_flag(sys.argv[2:])
             k = 5
-            for a in sys.argv[2:]:
+            for a in clean_args:
                 if a.isdigit():
                     k = int(a)
-            cmd_eval(k=k)
+            cmd_eval(k=k, rerank=rerank)
             return
         elif first_arg == "download-dump":
             cmd_download_dump()
@@ -233,14 +263,17 @@ def main() -> None:
             cmd_ingest_dump(limit, reset=reset)
             return
         elif first_arg == "search" and len(sys.argv) > 2:
-            cmd_search(" ".join(sys.argv[2:]))
+            clean_args, rerank = _extract_rerank_flag(sys.argv[2:])
+            cmd_search(" ".join(clean_args), rerank=rerank)
             return
         elif first_arg == "ask" and len(sys.argv) > 2:
-            cmd_ask(" ".join(sys.argv[2:]))
+            clean_args, rerank = _extract_rerank_flag(sys.argv[2:])
+            cmd_ask(" ".join(clean_args), rerank=rerank)
             return
         else:
-            # Direct query: ser "What is physics?"
-            cmd_ask(" ".join(sys.argv[1:]))
+            # Direct query: ser "What is physics?" [--rerank]
+            clean_args, rerank = _extract_rerank_flag(sys.argv[1:])
+            cmd_ask(" ".join(clean_args), rerank=rerank)
             return
 
     # Interactive REPL mode (when run without arguments)
@@ -261,8 +294,9 @@ def main() -> None:
                 cmd_stats()
             elif user_input.lower().startswith("/eval") or user_input.lower().startswith("/benchmark"):
                 parts = user_input.split()
-                k = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 5
-                cmd_eval(k=k)
+                clean_parts, rerank = _extract_rerank_flag(parts[1:])
+                k = int(clean_parts[0]) if clean_parts and clean_parts[0].isdigit() else 5
+                cmd_eval(k=k, rerank=rerank)
             elif user_input.lower() == "/download-dump":
                 cmd_download_dump()
             elif user_input.lower().startswith("/ingest-dump"):
@@ -280,18 +314,21 @@ def main() -> None:
             elif user_input.lower().startswith("/search"):
                 parts = user_input.split(maxsplit=1)
                 if len(parts) > 1:
-                    cmd_search(parts[1])
+                    clean_parts, rerank = _extract_rerank_flag(parts[1].split())
+                    cmd_search(" ".join(clean_parts), rerank=rerank)
                 else:
-                    console.print("[red]Usage: /search <query>[/red]")
+                    console.print("[red]Usage: /search <query> [--rerank][/red]")
             elif user_input.lower().startswith("/ask"):
                 parts = user_input.split(maxsplit=1)
                 if len(parts) > 1:
-                    cmd_ask(parts[1])
+                    clean_parts, rerank = _extract_rerank_flag(parts[1].split())
+                    cmd_ask(" ".join(clean_parts), rerank=rerank)
                 else:
-                    console.print("[red]Usage: /ask <question>[/red]")
+                    console.print("[red]Usage: /ask <question> [--rerank][/red]")
             else:
                 # Default: any plain text input is treated as a question
-                cmd_ask(user_input)
+                clean_parts, rerank = _extract_rerank_flag(user_input.split())
+                cmd_ask(" ".join(clean_parts), rerank=rerank)
 
         except (KeyboardInterrupt, EOFError):
             console.print("\n[cyan]Goodbye![/cyan]")

@@ -9,14 +9,18 @@ from ser.pipeline import index_documents
 mcp = MCPServer("ser")
 
 @mcp.tool()
-
-def search_wikipedia(query:str, limit:int = 3) -> str:
+def search_wikipedia(query: str, limit: int = 3, rerank: bool = False) -> str:
     """Performs semantic search across Simple English Wikipedia.
     
     Returns matching excerpts, titles, similarity scores, and Wikipedia URLs.
     Use this when you need factual verification or background sources.
+    
+    Args:
+        query: The search text or question.
+        limit: Number of results to return (default: 3).
+        rerank: Apply 2nd-stage cross-encoder re-ranking for higher precision (default: False).
     """
-    chunks = ask(client,query=query,k=limit)
+    chunks = ask(client, query=query, k=limit, rerank=rerank)
     if not chunks:
         return "No relevant Wikipedia articles found."
     
@@ -38,12 +42,16 @@ def search_wikipedia(query:str, limit:int = 3) -> str:
 
 
 @mcp.tool()
-def ask_wikipedia(question: str) -> str:
+def ask_wikipedia(question: str, rerank: bool = False) -> str:
     """Answers a question using Simple English Wikipedia with strict citations.
     
     Generates a clear answer grounded strictly in retrieved sources.
+    
+    Args:
+        question: The question to answer.
+        rerank: Apply 2nd-stage cross-encoder re-ranking for higher precision (default: False).
     """
-    chunks = ask(client, query=question, k=4)
+    chunks = ask(client, query=question, k=4, rerank=rerank)
     if not chunks or (chunks[0].score and chunks[0].score < 0.40):
         return "I could not find sufficient information in Simple English Wikipedia to answer this question."
     answer, citations = generate_answer(question, chunks)

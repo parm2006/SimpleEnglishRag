@@ -41,7 +41,7 @@ def index_documents(
             if on_progress:
                 on_progress(total_chunks, rate)
             else:
-                print(f"Indexed {total_chunks} chunks ({rate:.1f} chunks/sec) into '{COLLECTION_NAME}'...")
+                print(f"Indexed {total_chunks} chunks ({rate:.1f} chunks/sec) into '{COLLECTION_NAME}'...", flush=True)
 
         if last_future is not None:
             last_future.result()

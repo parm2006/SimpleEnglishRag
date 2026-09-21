@@ -49,200 +49,399 @@ class BenchmarkScorecard:
     per_category: dict[str, dict[str, float]] = field(default_factory=dict)
 
 
-# Canonical 30-Question Evaluation Dataset across 6 core domains
+# ==============================================================================
+# CHALLENGING RETRIEVAL BENCHMARK (Zero Literal Keyword Overlap, Conceptual Riddles)
+# ==============================================================================
 BENCHMARK_DATASET: list[BenchmarkCase] = [
-    # 1. Science & Physics
+    # --------------------------------------------------------------------------
+    # 1. Advanced History & Conflict (Conceptual clues, no title keywords)
+    # --------------------------------------------------------------------------
     BenchmarkCase(
-        query="What is photosynthesis and how does it produce oxygen?",
-        expected_title="Photosynthesis",
-        acceptable_titles=["Photosynthesis", "Chloroplast", "Plant"],
-        category="Science & Physics",
+        query="The 1815 battle in modern Belgium where the Seventh Coalition led by Wellington and Blücher decisively ended the French Emperor's rule",
+        expected_title="Battle of Waterloo",
+        acceptable_titles=["Battle of Waterloo", "Waterloo", "Napoleon"],
+        category="History & Events",
     ),
     BenchmarkCase(
-        query="Albert Einstein theory of general relativity",
-        expected_title="General relativity",
-        acceptable_titles=["General relativity", "Albert Einstein", "Theory of relativity"],
-        category="Science & Physics",
+        query="The 1962 intense 13-day confrontation between Kennedy and Khrushchev triggered by Soviet ballistic installations in the Caribbean",
+        expected_title="Cuban Missile Crisis",
+        acceptable_titles=["Cuban Missile Crisis", "Cold War"],
+        category="History & Events",
     ),
     BenchmarkCase(
-        query="How does a laser work?",
-        expected_title="Laser",
-        acceptable_titles=["Laser", "Optics", "Light"],
-        category="Science & Physics",
+        query="The catastrophic 1986 steam explosion and graphite fire at reactor unit four in Soviet Ukraine",
+        expected_title="Chernobyl disaster",
+        acceptable_titles=["Chernobyl disaster", "Chernobyl", "Nuclear meltdown"],
+        category="History & Events",
     ),
     BenchmarkCase(
-        query="Structure of an atom and subatomic particles",
-        expected_title="Atom",
-        acceptable_titles=["Atom", "Subatomic particle", "Electron", "Proton"],
-        category="Science & Physics",
+        query="The 1944 massive Allied amphibious invasion of Normandy beaches codenamed Operation Overlord",
+        expected_title="Invasion of Normandy",
+        acceptable_titles=["Invasion of Normandy", "Normandy landings", "D-Day", "Operation Overlord"],
+        category="History & Events",
     ),
     BenchmarkCase(
-        query="Newton's laws of motion",
-        expected_title="Newton's laws of motion",
-        acceptable_titles=["Newton's laws of motion", "Isaac Newton", "Classical mechanics"],
-        category="Science & Physics",
-    ),
-
-    # 2. Astronomy & Space
-    BenchmarkCase(
-        query="James Webb Space Telescope mission and discoveries",
-        expected_title="James Webb Space Telescope",
-        acceptable_titles=["James Webb Space Telescope", "Hubble Space Telescope", "Space observatory"],
-        category="Astronomy & Space",
+        query="The ancient Macedonian king who conquered the Persian Empire by age thirty before dying in Babylon in 323 BC",
+        expected_title="Alexander the Great",
+        acceptable_titles=["Alexander the Great"],
+        category="History & Events",
     ),
     BenchmarkCase(
-        query="What is a black hole and event horizon?",
-        expected_title="Black hole",
-        acceptable_titles=["Black hole", "Event horizon", "Singularity"],
-        category="Astronomy & Space",
-    ),
-    BenchmarkCase(
-        query="The planet Mars surface and atmosphere",
-        expected_title="Mars",
-        acceptable_titles=["Mars", "Solar System", "Terrestrial planet"],
-        category="Astronomy & Space",
-    ),
-    BenchmarkCase(
-        query="How does the Sun produce energy through nuclear fusion?",
-        expected_title="Sun",
-        acceptable_titles=["Sun", "Nuclear fusion", "Star"],
-        category="Astronomy & Space",
-    ),
-    BenchmarkCase(
-        query="Milky Way galaxy structure",
-        expected_title="Milky Way",
-        acceptable_titles=["Milky Way", "Galaxy", "Spiral galaxy"],
-        category="Astronomy & Space",
+        query="The peace treaty signed in the Hall of Mirrors in 1919 that imposed heavy reparations on Germany and created the League of Nations",
+        expected_title="Treaty of Versailles",
+        acceptable_titles=["Treaty of Versailles", "League of Nations"],
+        category="History & Events",
     ),
 
-    # 3. History & Civilizations
+    # --------------------------------------------------------------------------
+    # 2. Advanced Physics & Space (Mechanisms and paradoxes)
+    # --------------------------------------------------------------------------
     BenchmarkCase(
-        query="Fall of the Western Roman Empire",
-        expected_title="Fall of the Western Roman Empire",
-        acceptable_titles=["Fall of the Western Roman Empire", "Roman Empire", "Ancient Rome"],
-        category="History & Civilizations",
+        query="The quantum mechanical paradox involving a feline that remains simultaneously alive and dead inside a sealed chamber with a radioactive trigger",
+        expected_title="Schrödinger's cat",
+        acceptable_titles=["Schrödinger's cat", "Erwin Schrödinger", "Superposition principle"],
+        category="Physics & Space",
     ),
     BenchmarkCase(
-        query="Who was Joan of Arc in the Hundred Years' War?",
-        expected_title="Joan of Arc",
-        acceptable_titles=["Joan of Arc", "Hundred Years' War", "France"],
-        category="History & Civilizations",
+        query="The boundary surface around a collapsed gravitational singularity from which no radiation or matter can escape to the outside universe",
+        expected_title="Event horizon",
+        acceptable_titles=["Event horizon", "Black hole", "Singularity"],
+        category="Physics & Space",
     ),
     BenchmarkCase(
-        query="The Industrial Revolution changes in manufacturing",
-        expected_title="Industrial Revolution",
-        acceptable_titles=["Industrial Revolution", "Steam engine", "Manufacturing"],
-        category="History & Civilizations",
+        query="The theoretical subatomic particle predicted by the Standard Model that gives mass to elementary particles through spontaneous symmetry breaking",
+        expected_title="Higgs boson",
+        acceptable_titles=["Higgs boson", "Standard Model", "Large Hadron Collider"],
+        category="Physics & Space",
     ),
     BenchmarkCase(
-        query="Ancient Egyptian pyramids and Pharaohs",
-        expected_title="Ancient Egypt",
-        acceptable_titles=["Ancient Egypt", "Egyptian pyramids", "Pharaoh", "Pyramid"],
-        category="History & Civilizations",
+        query="The optical wave phenomenon where light bends as it passes through a narrow aperture or around obstacles creating fringe patterns",
+        expected_title="Diffraction",
+        acceptable_titles=["Diffraction", "Interference", "Wave"],
+        category="Physics & Space",
     ),
     BenchmarkCase(
-        query="The Renaissance period in Europe",
-        expected_title="Renaissance",
-        acceptable_titles=["Renaissance", "Middle Ages", "History of Europe"],
-        category="History & Civilizations",
-    ),
-
-    # 4. Geography & Earth
-    BenchmarkCase(
-        query="What is the capital city of Australia?",
-        expected_title="Canberra",
-        acceptable_titles=["Canberra", "Australia", "Capital of Australia"],
-        category="Geography & Earth",
+        query="The moon of Saturn with a subsurface liquid water ocean that ejects supersonic geysers into space feeding the E ring",
+        expected_title="Enceladus",
+        acceptable_titles=["Enceladus", "Enceladus (moon)", "Saturn"],
+        category="Physics & Space",
     ),
     BenchmarkCase(
-        query="Amazon River length and basin",
-        expected_title="Amazon River",
-        acceptable_titles=["Amazon River", "Amazon rainforest", "South America"],
-        category="Geography & Earth",
-    ),
-    BenchmarkCase(
-        query="Mount Everest elevation and Himalayas",
-        expected_title="Mount Everest",
-        acceptable_titles=["Mount Everest", "Himalayas", "Mountain"],
-        category="Geography & Earth",
-    ),
-    BenchmarkCase(
-        query="Sahara Desert climate and geography",
-        expected_title="Sahara Desert",
-        acceptable_titles=["Sahara", "Sahara Desert", "Desert", "North Africa"],
-        category="Geography & Earth",
-    ),
-    BenchmarkCase(
-        query="Plate tectonics and continental drift",
-        expected_title="Plate tectonics",
-        acceptable_titles=["Plate tectonics", "Continental drift", "Earthquake"],
-        category="Geography & Earth",
+        query="The hypothetical form of matter that does not interact with electromagnetic radiation but accounts for approximately 85 percent of all mass in the universe",
+        expected_title="Dark matter",
+        acceptable_titles=["Dark matter", "Cosmology"],
+        category="Physics & Space",
     ),
 
-    # 5. Computing & Mathematics
+    # --------------------------------------------------------------------------
+    # 3. Computing & Algorithms (Abstract specifications)
+    # --------------------------------------------------------------------------
     BenchmarkCase(
-        query="What is an operating system and kernel?",
+        query="The recursive divide-and-conquer sorting procedure that partitions elements around a selected pivot",
+        expected_title="Quicksort",
+        acceptable_titles=["Quicksort", "Sorting algorithm"],
+        category="Computing & Algorithms",
+    ),
+    BenchmarkCase(
+        query="The high-level programming language created by Guido van Rossum named after a British sketch comedy series",
+        expected_title="Python",
+        acceptable_titles=["Python (programming language)", "Python", "Guido van Rossum"],
+        category="Computing & Algorithms",
+    ),
+    BenchmarkCase(
+        query="The decentralized consensus mechanism used in blockchain networks where miners solve computationally intensive cryptographic puzzles",
+        expected_title="Proof of work",
+        acceptable_titles=["Proof of work", "Bitcoin", "Blockchain"],
+        category="Computing & Algorithms",
+    ),
+    BenchmarkCase(
+        query="The core software subsystem running in privileged supervisor mode that multiplexes CPU execution, memory pages, and device drivers",
         expected_title="Operating system",
-        acceptable_titles=["Operating system", "Kernel (operating system)", "Linux"],
-        category="Computing & Technology",
+        acceptable_titles=["Operating system", "Kernel (computer science)", "Kernel", "Linux"],
+        category="Computing & Algorithms",
     ),
     BenchmarkCase(
-        query="Alan Turing and the Turing machine",
-        expected_title="Turing machine",
-        acceptable_titles=["Turing machine", "Alan Turing", "Computer science"],
-        category="Computing & Technology",
-    ),
-    BenchmarkCase(
-        query="How does the Internet and World Wide Web work?",
-        expected_title="Internet",
-        acceptable_titles=["Internet", "World Wide Web", "Computer network"],
-        category="Computing & Technology",
-    ),
-    BenchmarkCase(
-        query="Binary number system and bits",
-        expected_title="Binary number",
-        acceptable_titles=["Binary number", "Binary numeral system", "Bit", "Byte"],
-        category="Computing & Technology",
-    ),
-    BenchmarkCase(
-        query="Cryptography and public-key encryption",
+        query="The mathematical scheme using asymmetric trapdoor functions where a public key encrypts data that only a private key can decrypt",
         expected_title="Cryptography",
-        acceptable_titles=["Cryptography", "Public-key cryptography", "Encryption"],
-        category="Computing & Technology",
+        acceptable_titles=["Cryptography", "Public-key cryptography", "Encryption", "RSA"],
+        category="Computing & Algorithms",
     ),
 
-    # 6. Biology & Medicine
+    # --------------------------------------------------------------------------
+    # 4. Geography & Enclaves (Geopolitical and geological riddles)
+    # --------------------------------------------------------------------------
     BenchmarkCase(
-        query="How do vaccines work to create immunity?",
+        query="The sovereign enclaved monarchy completely surrounded within the borders of South Africa in the Maloti Mountains",
+        expected_title="Lesotho",
+        acceptable_titles=["Lesotho"],
+        category="Geography & Earth",
+    ),
+    BenchmarkCase(
+        query="The deepest oceanic depression in the world located in the western North Pacific Ocean near the Mariana Islands",
+        expected_title="Mariana Trench",
+        acceptable_titles=["Mariana Trench", "Challenger Deep", "Pacific Ocean"],
+        category="Geography & Earth",
+    ),
+    BenchmarkCase(
+        query="The geologic zone where one heavier tectonic plate slides underneath another lighter plate down into the Earth's mantle",
+        expected_title="Subduction",
+        acceptable_titles=["Subduction", "Subduction zone", "Plate tectonics", "Convergent boundary"],
+        category="Geography & Earth",
+    ),
+    BenchmarkCase(
+        query="The transcontinental strait connecting the Black Sea to the Sea of Marmara that divides the European and Asian parts of Istanbul",
+        expected_title="Bosphorus",
+        acceptable_titles=["Bosphorus", "Bosporus", "Istanbul"],
+        category="Geography & Earth",
+    ),
+    BenchmarkCase(
+        query="The hyper-saline endorheic lake bordered by Jordan and Israel whose surface is the lowest land elevation on Earth",
+        expected_title="Dead Sea",
+        acceptable_titles=["Dead Sea"],
+        category="Geography & Earth",
+    ),
+
+    # --------------------------------------------------------------------------
+    # 5. Medicine & Biochemistry (Mechanisms, pathology, physiology)
+    # --------------------------------------------------------------------------
+    BenchmarkCase(
+        query="The emergency medical condition where a dislodged thrombus travels through the venous circulation and occludes the arterial supply of the lungs",
+        expected_title="Pulmonary embolism",
+        acceptable_titles=["Pulmonary embolism", "Thrombosis", "Deep vein thrombosis", "Embolism"],
+        category="Medicine & Biology",
+    ),
+    BenchmarkCase(
+        query="The specialized intracellular organelle known as the powerhouse that produces ATP via oxidative phosphorylation",
+        expected_title="Mitochondrion",
+        acceptable_titles=["Mitochondrion", "Mitochondria", "Cell (biology)"],
+        category="Medicine & Biology",
+    ),
+    BenchmarkCase(
+        query="The infectious transmissible spongiform encephalopathy affecting bovines caused by abnormally folded prion proteins",
+        expected_title="Bovine spongiform encephalopathy",
+        acceptable_titles=["Bovine spongiform encephalopathy", "Mad cow disease", "Prion"],
+        category="Medicine & Biology",
+    ),
+    BenchmarkCase(
+        query="The noble gas element with atomic number 2 that remains liquid at normal pressure near absolute zero and exhibits superfluidity",
+        expected_title="Helium",
+        acceptable_titles=["Helium", "Superfluidity"],
+        category="Medicine & Biology",
+    ),
+    BenchmarkCase(
+        query="The acute infectious respiratory illness caused by Bordetella bacteria causing violent coughing spells with an inspiratory gasp sound",
+        expected_title="Pertussis",
+        acceptable_titles=["Pertussis", "Whooping cough"],
+        category="Medicine & Biology",
+    ),
+    BenchmarkCase(
+        query="The biological preparation that exposes the adaptive immune system to attenuated antigens to stimulate protective antibody memory",
         expected_title="Vaccine",
-        acceptable_titles=["Vaccine", "Immune system", "Immunity (medical)"],
-        category="Biology & Medicine",
+        acceptable_titles=["Vaccine", "Immune system", "Immunity (medical)", "Immunology"],
+        category="Medicine & Biology",
     ),
     BenchmarkCase(
-        query="Structure of DNA and the double helix",
+        query="The antiparallel double-stranded biopolymer carrying genetic instructions composed of adenine, cytosine, guanine, and thymine",
         expected_title="DNA",
-        acceptable_titles=["DNA", "Deoxyribonucleic acid", "Genetics", "Chromosome"],
-        category="Biology & Medicine",
+        acceptable_titles=["DNA", "Deoxyribonucleic acid", "Double helix", "Genetics"],
+        category="Medicine & Biology",
+    ),
+
+    # --------------------------------------------------------------------------
+    # 6. Philosophy & Economics (Conceptual synthesis)
+    # --------------------------------------------------------------------------
+    BenchmarkCase(
+        query="The classical philosopher of Athens sentenced to death by drinking a cup of hemlock for corrupting the young minds",
+        expected_title="Socrates",
+        acceptable_titles=["Socrates", "Plato", "Ancient Greece"],
+        category="Philosophy & Economics",
     ),
     BenchmarkCase(
-        query="Human circulatory system and the heart",
-        expected_title="Circulatory system",
-        acceptable_titles=["Circulatory system", "Heart", "Blood"],
-        category="Biology & Medicine",
+        query="The epic Mesopotamian poem regarded as the earliest surviving notable work of literature featuring a king searching for immortality with Enkidu",
+        expected_title="Epic of Gilgamesh",
+        acceptable_titles=["Epic of Gilgamesh", "Gilgamesh", "Mesopotamia"],
+        category="Philosophy & Economics",
     ),
     BenchmarkCase(
-        query="Antibiotics and bacterial infections",
-        expected_title="Antibiotic",
-        acceptable_titles=["Antibiotic", "Bacteria", "Penicillin"],
-        category="Biology & Medicine",
-    ),
-    BenchmarkCase(
-        query="How does the human brain and neurons process signals?",
-        expected_title="Brain",
-        acceptable_titles=["Brain", "Neuron", "Nervous system", "Human brain"],
-        category="Biology & Medicine",
+        query="The economic situation where stagnant output and rising unemployment coincided with rapid price inflation",
+        expected_title="Stagflation",
+        acceptable_titles=["Stagflation", "Inflation", "Macroeconomics"],
+        category="Philosophy & Economics",
     ),
 ]
+
+# ==============================================================================
+# COMMENTED OUT: PREVIOUS 100% TRIVIAL QUERIES
+# These queries scored 100% Hit@1 in baseline benchmarks because they contained
+# direct literal title keywords (e.g. "Photosynthesis", "Canberra", "Mars", etc.)
+# ==============================================================================
+# BASELINE_100_PERCENT_QUERIES = [
+#     # Science & Physics (100% Hit @ 1)
+#     BenchmarkCase(
+#         query="What is photosynthesis and how does it produce oxygen?",
+#         expected_title="Photosynthesis",
+#         acceptable_titles=["Photosynthesis", "Chloroplast", "Plant"],
+#         category="Science & Physics",
+#     ),
+#     BenchmarkCase(
+#         query="Albert Einstein theory of general relativity",
+#         expected_title="General relativity",
+#         acceptable_titles=["General relativity", "Albert Einstein", "Theory of relativity"],
+#         category="Science & Physics",
+#     ),
+#     BenchmarkCase(
+#         query="How does a laser work?",
+#         expected_title="Laser",
+#         acceptable_titles=["Laser", "Optics", "Light"],
+#         category="Science & Physics",
+#     ),
+#     BenchmarkCase(
+#         query="Structure of an atom and subatomic particles",
+#         expected_title="Atom",
+#         acceptable_titles=["Atom", "Subatomic particle", "Electron", "Proton"],
+#         category="Science & Physics",
+#     ),
+#     BenchmarkCase(
+#         query="Newton's laws of motion",
+#         expected_title="Newton's laws of motion",
+#         acceptable_titles=["Newton's laws of motion", "Isaac Newton", "Classical mechanics"],
+#         category="Science & Physics",
+#     ),
+#
+#     # Astronomy & Space (100% Hit @ 1)
+#     BenchmarkCase(
+#         query="James Webb Space Telescope mission and discoveries",
+#         expected_title="James Webb Space Telescope",
+#         acceptable_titles=["James Webb Space Telescope", "Hubble Space Telescope", "Space observatory"],
+#         category="Astronomy & Space",
+#     ),
+#     BenchmarkCase(
+#         query="What is a black hole and event horizon?",
+#         expected_title="Black hole",
+#         acceptable_titles=["Black hole", "Event horizon", "Singularity"],
+#         category="Astronomy & Space",
+#     ),
+#     BenchmarkCase(
+#         query="The planet Mars surface and atmosphere",
+#         expected_title="Mars",
+#         acceptable_titles=["Mars", "Solar System", "Terrestrial planet"],
+#         category="Astronomy & Space",
+#     ),
+#     BenchmarkCase(
+#         query="How does the Sun produce energy through nuclear fusion?",
+#         expected_title="Sun",
+#         acceptable_titles=["Sun", "Nuclear fusion", "Star"],
+#         category="Astronomy & Space",
+#     ),
+#     BenchmarkCase(
+#         query="Milky Way galaxy structure",
+#         expected_title="Milky Way",
+#         acceptable_titles=["Milky Way", "Galaxy", "Spiral galaxy"],
+#         category="Astronomy & Space",
+#     ),
+#
+#     # History & Civilizations (100% Hit @ 1)
+#     BenchmarkCase(
+#         query="Fall of the Western Roman Empire",
+#         expected_title="Fall of the Western Roman Empire",
+#         acceptable_titles=["Fall of the Western Roman Empire", "Roman Empire", "Ancient Rome"],
+#         category="History & Civilizations",
+#     ),
+#     BenchmarkCase(
+#         query="Who was Joan of Arc in the Hundred Years' War?",
+#         expected_title="Joan of Arc",
+#         acceptable_titles=["Joan of Arc", "Hundred Years' War", "France"],
+#         category="History & Civilizations",
+#     ),
+#     BenchmarkCase(
+#         query="The Industrial Revolution changes in manufacturing",
+#         expected_title="Industrial Revolution",
+#         acceptable_titles=["Industrial Revolution", "Steam engine", "Manufacturing"],
+#         category="History & Civilizations",
+#     ),
+#     BenchmarkCase(
+#         query="Ancient Egyptian pyramids and Pharaohs",
+#         expected_title="Ancient Egypt",
+#         acceptable_titles=["Ancient Egypt", "Egyptian pyramids", "Pharaoh", "Pyramid"],
+#         category="History & Civilizations",
+#     ),
+#     BenchmarkCase(
+#         query="The Renaissance period in Europe",
+#         expected_title="Renaissance",
+#         acceptable_titles=["Renaissance", "Middle Ages", "History of Europe"],
+#         category="History & Civilizations",
+#     ),
+#
+#     # Geography & Earth (100% Hit @ 1)
+#     BenchmarkCase(
+#         query="What is the capital city of Australia?",
+#         expected_title="Canberra",
+#         acceptable_titles=["Canberra", "Australia", "Capital of Australia"],
+#         category="Geography & Earth",
+#     ),
+#     BenchmarkCase(
+#         query="Amazon River length and basin",
+#         expected_title="Amazon River",
+#         acceptable_titles=["Amazon River", "Amazon rainforest", "South America"],
+#         category="Geography & Earth",
+#     ),
+#     BenchmarkCase(
+#         query="Mount Everest elevation and Himalayas",
+#         expected_title="Mount Everest",
+#         acceptable_titles=["Mount Everest", "Himalayas", "Mountain"],
+#         category="Geography & Earth",
+#     ),
+#     BenchmarkCase(
+#         query="Sahara Desert climate and geography",
+#         expected_title="Sahara Desert",
+#         acceptable_titles=["Sahara", "Sahara Desert", "Desert", "North Africa"],
+#         category="Geography & Earth",
+#     ),
+#     BenchmarkCase(
+#         query="Plate tectonics and continental drift",
+#         expected_title="Plate tectonics",
+#         acceptable_titles=["Plate tectonics", "Continental drift", "Earthquake"],
+#         category="Geography & Earth",
+#     ),
+#
+#     # Computing & Biology (The remaining 100% Hit @ 1 queries)
+#     BenchmarkCase(
+#         query="Alan Turing and the Turing machine",
+#         expected_title="Turing machine",
+#         acceptable_titles=["Turing machine", "Alan Turing", "Computer science"],
+#         category="Computing & Technology",
+#     ),
+#     BenchmarkCase(
+#         query="How does the Internet and World Wide Web work?",
+#         expected_title="Internet",
+#         acceptable_titles=["Internet", "World Wide Web", "Computer network"],
+#         category="Computing & Technology",
+#     ),
+#     BenchmarkCase(
+#         query="Binary number system and bits",
+#         expected_title="Binary number",
+#         acceptable_titles=["Binary number", "Binary numeral system", "Bit", "Byte"],
+#         category="Computing & Technology",
+#     ),
+#     BenchmarkCase(
+#         query="Human circulatory system and the heart",
+#         expected_title="Circulatory system",
+#         acceptable_titles=["Circulatory system", "Heart", "Blood"],
+#         category="Biology & Medicine",
+#     ),
+#     BenchmarkCase(
+#         query="Antibiotics and bacterial infections",
+#         expected_title="Antibiotic",
+#         acceptable_titles=["Antibiotic", "Bacteria", "Penicillin"],
+#         category="Biology & Medicine",
+#     ),
+#     BenchmarkCase(
+#         query="How does the human brain and neurons process signals?",
+#         expected_title="Brain",
+#         acceptable_titles=["Brain", "Neuron", "Nervous system", "Human brain"],
+#         category="Biology & Medicine",
+#     ),
+# ]
 
 
 def evaluate_query(

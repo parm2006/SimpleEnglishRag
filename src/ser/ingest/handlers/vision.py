@@ -1,14 +1,29 @@
 import asyncio
 import base64
 import os
+import sys
 import uuid
 from pathlib import Path
 import httpx
 from ser.ingest.models import Document
 
 
+def has_windows_ocr() -> bool:
+    """Checks if native Windows Media OCR is available on this system."""
+    if sys.platform != "win32":
+        return False
+    try:
+        import winsdk.windows.media.ocr  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
 def _windows_ocr(path: Path) -> str:
     """Uses native Windows Media OCR API via winsdk (0 MB download, hardware-accelerated)."""
+    if not has_windows_ocr():
+        return "[Windows OCR is only available on Windows with winsdk installed]"
+
     try:
         import winsdk.windows.media.ocr as ocr
         import winsdk.windows.graphics.imaging as imaging
@@ -69,7 +84,26 @@ def get_vision_model(ollama_host: str = "http://localhost:11434") -> str:
     return "moondream:latest"
 
 
-def _ollama_vision(path: Path) -> str:
+def has_ollama_vision(ollama_host: str = "http://localhost:11434") -> bool:
+    """Checks if a supported multimodal vision model is currently pulled in Ollama."""
+    try:
+        resp = httpx.get(f"{ollama_host}/api/tags", timeout=1.5)
+        if resp.status_code == 200:
+            installed = [m["name"] for m in resp.json().get("models", [])]
+            return any(
+                pref in inst or inst.startswith(pref)
+                for pref in PREFERRED_VISION_MODELS
+                for inst in installed
+            )
+    except Exception:
+        pass
+    return False
+
+
+def _ollama_vision(
+    path: Path,
+    prompt: str = "Describe this image in detail. Transcribe all text, numbers, labels, and summarize any diagrams or charts accurately.",
+) -> str:
     """Uses local Ollama vision model (e.g. moondream, llama3.2-vision) for deep multimodal scene understanding."""
     ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
     model_name = get_vision_model(ollama_host)
@@ -81,7 +115,7 @@ def _ollama_vision(path: Path) -> str:
             f"{ollama_host}/api/generate",
             json={
                 "model": model_name,
-                "prompt": "Describe this image in detail. Transcribe all text, numbers, labels, and summarize any diagrams or charts accurately.",
+                "prompt": prompt,
                 "images": [b64],
                 "stream": False,
             },
@@ -91,12 +125,14 @@ def _ollama_vision(path: Path) -> str:
             return resp.json().get("response", "").strip()
     except Exception:
         pass
-    # Fallback to Windows OCR if Ollama Vision is unavailable
-    return _windows_ocr(path)
+    # Fallback to Windows OCR if available on Windows, else empty
+    if has_windows_ocr():
+        return _windows_ocr(path)
+    return ""
 
 
 def ocr_scanned_pdf(path: Path) -> str:
-    """Extracts page images from a scanned PDF and OCRs each page."""
+    """Extracts page images from a scanned PDF and OCRs each page via Windows OCR or Ollama vision."""
     import pymupdf
     doc = pymupdf.open(str(path.resolve()))
     sections: list[str] = [f"# Scanned Document: {path.stem}\n"]
@@ -108,7 +144,15 @@ def ocr_scanned_pdf(path: Path) -> str:
         for idx, page in enumerate(doc, 1):
             pix = page.get_pixmap(dpi=150)
             pix.save(str(temp_img_path))
-            page_text = _windows_ocr(temp_img_path).strip()
+            if has_windows_ocr():
+                page_text = _windows_ocr(temp_img_path).strip()
+            elif has_ollama_vision():
+                page_text = _ollama_vision(
+                    temp_img_path,
+                    prompt="Transcribe all text from this scanned document page accurately verbatim.",
+                ).strip()
+            else:
+                page_text = ""
             if page_text:
                 sections.append(f"## Page {idx}\n\n{page_text}\n")
     finally:
@@ -126,11 +170,23 @@ def extract_image_file(path: Path) -> Document:
     page_id = str(uuid.uuid5(uuid.NAMESPACE_URL, url))
     title = resolved.stem.replace("_", " ").replace("-", " ").title()
 
-    backend = os.getenv("VISION_BACKEND", "windows_ocr").lower()
+    backend = os.getenv("VISION_BACKEND", "auto").lower()
     if backend == "ollama":
         text_content = _ollama_vision(resolved)
-    else:
+    elif backend == "windows_ocr":
         text_content = _windows_ocr(resolved)
+    else:  # "auto"
+        # On Windows: use Windows OCR by default for text/invoices, or Ollama if available
+        # On Linux/macOS: smoothly use Ollama vision with zero Windows dependencies
+        if has_windows_ocr():
+            text_content = _windows_ocr(resolved)
+        elif has_ollama_vision():
+            text_content = _ollama_vision(resolved)
+        else:
+            text_content = (
+                "[Notice: Image text extraction requires either Windows Media OCR (Windows) "
+                "or Ollama with a vision model like 'moondream' (Linux/macOS/Windows).]"
+            )
 
     doc_text = f"# Image: {title}\n\n{text_content}"
 

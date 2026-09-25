@@ -143,6 +143,10 @@ def create_chunks(
     source_type = getattr(doc, "source_type", "wiki")
     content_hash = getattr(doc, "content_hash", "")
 
+    if source_type == "code":
+        from ser.ingest.chunk_code import chunk_code
+        return chunk_code(doc, chunk_size=chunk_size, overlap=overlap)
+
     lines = text.splitlines()
 
     # Track active hierarchy: level -> heading text

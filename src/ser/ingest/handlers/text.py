@@ -35,8 +35,7 @@ def extract_text_file(path: Path) -> Document:
     elif ext in CODE_EXTS:
         source_type = "code"
         title = resolved.name
-        # Prepend a top-level Markdown header so the chunker assigns file breadcrumbs
-        doc_text = f"# File: {resolved.name}\n\n```{ext.lstrip('.')}\n{content}\n```"
+        doc_text = content
     else:
         source_type = "text"
         title = resolved.name

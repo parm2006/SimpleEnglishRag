@@ -8,3 +8,4 @@ class Document:
     url: str
     text: str
     source_type: str = "wiki"
+    content_hash: str = ""

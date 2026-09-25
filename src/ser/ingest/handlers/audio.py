@@ -12,8 +12,12 @@ def _ensure_faster_whisper() -> None:
     try:
         import faster_whisper  # noqa: F401
     except ImportError:
-        print("[ser] Audio ingestion detected. Installing faster-whisper on-demand...", flush=True)
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "faster-whisper"])
+        raise RuntimeError(
+            "Audio ingestion requires 'faster-whisper'.\n"
+            "To enable audio support in this environment, run:\n"
+            "    uv sync --extra audio\n"
+            "or: pip install faster-whisper"
+        )
 
 
 def extract_audio_file(path: Path) -> Document:

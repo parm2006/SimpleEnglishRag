@@ -26,7 +26,17 @@ def _windows_ocr(path: Path) -> str:
             result = await engine.recognize_async(bmp)
             return "\n".join(line.text for line in result.lines)
 
-        return asyncio.run(_run())
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                return pool.submit(asyncio.run, _run()).result()
+        else:
+            return asyncio.run(_run())
     except Exception as e:
         return f"[OCR Error: {e}]"
 
@@ -35,6 +45,7 @@ def _ollama_vision(path: Path) -> str:
     """Uses local Ollama vision model (e.g. llama3.2-vision) for deep multimodal scene understanding."""
     model_name = os.getenv("OLLAMA_VISION_MODEL", "llama3.2-vision:11b")
     ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    timeout_sec = float(os.getenv("OLLAMA_VISION_TIMEOUT", "120.0"))
 
     try:
         b64 = base64.b64encode(path.read_bytes()).decode("utf-8")
@@ -46,7 +57,7 @@ def _ollama_vision(path: Path) -> str:
                 "images": [b64],
                 "stream": False,
             },
-            timeout=30.0,
+            timeout=timeout_sec,
         )
         if resp.status_code == 200:
             return resp.json().get("response", "").strip()

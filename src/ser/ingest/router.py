@@ -11,7 +11,8 @@ IGNORE_DIRS = {
 
 EXT_MAP = {
     ".md": "text", ".markdown": "text", ".mdx": "text",
-    ".txt": "text", ".log": "text", ".csv": "text", ".tsv": "text",
+    ".txt": "text", ".log": "text",
+    ".csv": "table", ".tsv": "table",
     ".py": "code", ".rs": "code", ".ts": "code", ".js": "code",
     ".jsx": "code", ".tsx": "code", ".cpp": "code", ".c": "code",
     ".h": "code", ".hpp": "code", ".go": "code", ".java": "code",
@@ -39,7 +40,8 @@ def walk_directory(dir_path: Path) -> list[Path]:
 
 
 def process_file(path: Path) -> Document:
-    """Dispatches file extraction with zero-cost lazy imports."""
+    """Dispatches file extraction with zero-cost lazy imports and content hashing."""
+    import hashlib
     kind = get_file_kind(path)
     if not kind:
         raise ValueError(f"Unsupported file format: {path.suffix}")
@@ -47,18 +49,25 @@ def process_file(path: Path) -> Document:
     match kind:
         case "text" | "code":
             from ser.ingest.handlers.text import extract_text_file
-            return extract_text_file(path)
+            doc = extract_text_file(path)
+        case "table":
+            from ser.ingest.handlers.tabular import extract_tabular_file
+            doc = extract_tabular_file(path)
         case "pdf":
             from ser.ingest.handlers.pdf import extract_pdf_file
-            return extract_pdf_file(path)
+            doc = extract_pdf_file(path)
         case "image":
             from ser.ingest.handlers.vision import extract_image_file
-            return extract_image_file(path)
+            doc = extract_image_file(path)
         case "audio":
             from ser.ingest.handlers.audio import extract_audio_file
-            return extract_audio_file(path)
+            doc = extract_audio_file(path)
         case _:
             raise ValueError(f"No handler configured for kind: {kind}")
+
+    # Track content hash for versioning & deduplication
+    doc.content_hash = hashlib.sha256(doc.text.encode("utf-8")).hexdigest()[:16]
+    return doc
 
 
 def resolve_target(target: str) -> tuple[str, Any]:

@@ -17,6 +17,7 @@ class Chunk:
     text: str
     breadcrumb: str = ""
     source_type: str = "wiki"
+    content_hash: str = ""
 
     def get_embed_text(self) -> str:
         """Returns formatted text injected with the heading breadcrumb for dense embedding.
@@ -67,6 +68,7 @@ def _split_section_text(
     chunk_size: int = 1200,
     overlap: int = 200,
     source_type: str = "wiki",
+    content_hash: str = "",
 ) -> tuple[list[Chunk], int]:
     """Splits a section's text into word-boundary chunks inheriting the section breadcrumb."""
     chunks: list[Chunk] = []
@@ -85,6 +87,7 @@ def _split_section_text(
             text=clean_text,
             breadcrumb=breadcrumb,
             source_type=source_type,
+            content_hash=content_hash,
         )
         return [chk], start_index + 1
 
@@ -109,6 +112,7 @@ def _split_section_text(
                 text=chunk_text,
                 breadcrumb=breadcrumb,
                 source_type=source_type,
+                content_hash=content_hash,
             )
             chunks.append(chk)
             curr_index += 1
@@ -137,6 +141,7 @@ def create_chunks(
     url = doc.url
     title = doc.title
     source_type = getattr(doc, "source_type", "wiki")
+    content_hash = getattr(doc, "content_hash", "")
 
     lines = text.splitlines()
 
@@ -204,6 +209,7 @@ def create_chunks(
             chunk_size=chunk_size,
             overlap=overlap,
             source_type=source_type,
+            content_hash=content_hash,
         )
         all_chunks.extend(sec_chunks)
 

@@ -18,7 +18,7 @@ from ser.dump import iter_dump_articles
 from ser.eval import BENCHMARK_DATASET, render_console_report, run_benchmark, save_markdown_report
 from ser.generate import get_local_model, stream_answer
 from ser.ingest import fetch_wiki_article, resolve_target
-from ser.pipeline import ask, index_documents
+from ser.pipeline import ask, filter_unchanged_docs, index_documents
 
 console = Console()
 
@@ -99,15 +99,24 @@ def cmd_add(target: str) -> None:
         console.print(f"[yellow]No content extracted from '{target_clean}'.[/yellow]")
         return
 
-    desc = f"{len(docs)} document(s)" if len(docs) > 1 else f"'{docs[0].title}'"
+    # Check Qdrant for existing docs with matching content_hash to skip redundant re-embedding
+    to_index, skipped_count = filter_unchanged_docs(docs, client=client)
+    if skipped_count > 0:
+        console.print(f"[dim cyan]Skipped {skipped_count} unchanged document(s) (content_hash matched).[/dim cyan]")
+
+    if not to_index:
+        console.print(f"[bold green]✓ All {len(docs)} document(s) already up-to-date in '{COLLECTION_NAME}'. Nothing to index.[/bold green]")
+        return
+
+    desc = f"{len(to_index)} document(s)" if len(to_index) > 1 else f"'{to_index[0].title}'"
     with console.status(f"[cyan]Chunking, embedding and indexing {desc} into Qdrant...", spinner="dots"):
-        total_chunks = index_documents(docs, client=client)
+        total_chunks = index_documents(to_index, client=client)
 
     console.print(f"[bold green]✓ Successfully indexed {total_chunks:,} chunks from {desc} into '{COLLECTION_NAME}'![/bold green]")
-    for d in docs[:5]:
+    for d in to_index[:5]:
         console.print(f"  [dim]• [{d.source_type.upper()}] {d.title} ({d.url})[/dim]")
-    if len(docs) > 5:
-        console.print(f"  [dim]... and {len(docs) - 5} more files.[/dim]")
+    if len(to_index) > 5:
+        console.print(f"  [dim]... and {len(to_index) - 5} more files.[/dim]")
 
 
 def cmd_ingest_wiki(title: str) -> None:

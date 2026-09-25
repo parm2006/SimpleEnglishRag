@@ -41,10 +41,38 @@ def _windows_ocr(path: Path) -> str:
         return f"[OCR Error: {e}]"
 
 
+PREFERRED_VISION_MODELS = [
+    "moondream",
+    "llama3.2-vision:11b",
+    "llama3.2-vision",
+    "minicpm-v",
+    "llava",
+    "qwen2-vl",
+]
+
+
+def get_vision_model(ollama_host: str = "http://localhost:11434") -> str:
+    """Detects installed vision model in Ollama or falls back to env variable / moondream."""
+    env_model = os.getenv("OLLAMA_VISION_MODEL")
+    if env_model:
+        return env_model
+    try:
+        resp = httpx.get(f"{ollama_host}/api/tags", timeout=2.0)
+        if resp.status_code == 200:
+            installed = [m["name"] for m in resp.json().get("models", [])]
+            for pref in PREFERRED_VISION_MODELS:
+                for inst in installed:
+                    if inst == pref or inst.startswith(pref) or pref in inst:
+                        return inst
+    except Exception:
+        pass
+    return "moondream:latest"
+
+
 def _ollama_vision(path: Path) -> str:
-    """Uses local Ollama vision model (e.g. llama3.2-vision) for deep multimodal scene understanding."""
-    model_name = os.getenv("OLLAMA_VISION_MODEL", "llama3.2-vision:11b")
+    """Uses local Ollama vision model (e.g. moondream, llama3.2-vision) for deep multimodal scene understanding."""
     ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+    model_name = get_vision_model(ollama_host)
     timeout_sec = float(os.getenv("OLLAMA_VISION_TIMEOUT", "120.0"))
 
     try:

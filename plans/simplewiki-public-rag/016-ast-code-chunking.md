@@ -1,6 +1,6 @@
 # 016 — AST-Based Code Chunking
 
-Status: READY TO EXECUTE. Dependencies: 004, 015.
+Status: COMPLETE. Dependencies: 004, 015.
 Outcome: Replace naive character-sliding windowing on code files with AST-aware and syntax-boundary chunking. Preserves complete atomic units of meaning (functions, methods, classes, signatures, and docstrings) with contextual breadcrumbs (`file.py > class ClassName > def method_name()`) and zero external dependencies.
 
 ---

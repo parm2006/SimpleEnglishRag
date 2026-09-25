@@ -78,11 +78,13 @@ desktop.ini
 .antigravity/
 
 # ==============================================================================
-# LOGS, BENCHMARK REPORTS & SCRATCH ARTIFACTS
+# LOGS, BENCHMARK REPORTS, PLANS & SCRATCH ARTIFACTS
 # ==============================================================================
 *.log
 reports/
 handoffs/
+plans/
+docs/
 test-results/
 playwright-report/
 *.snapshot

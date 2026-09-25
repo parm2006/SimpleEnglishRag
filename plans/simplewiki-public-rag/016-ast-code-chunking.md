@@ -22,16 +22,14 @@ For real codebases, this naive splitting produces several severe retrieval defec
 ```
 src/ser/ingest/
   handlers/
-    text.py          # Detects CODE_EXTS, assigns source_type="code"
-  chunk_code.py      # AST-aware chunking dispatcher
-    ├── chunk_python_ast(doc, chunk_size, overlap)     # stdlib `ast` parser (0 deps)
-    └── chunk_polyglot_code(doc, chunk_size, overlap)  # Brace/regex boundary parser
+    text.py          # Detects .py and CODE_EXTS, assigns source_type="code"
+  chunk_code.py      # Python AST chunker via stdlib `ast` (0 dependencies)
 ```
 
 When `create_chunks(doc)` in `src/ser/chunk.py` encounters `doc.source_type == "code"`:
-- If file extension is `.py` $\to$ dispatches to `chunk_python_ast()`.
-- If file extension is in `{".rs", ".ts", ".js", ".jsx", ".tsx", ".go", ".c", ".cpp", ".h", ".hpp", ".java"}` $\to$ dispatches to `chunk_polyglot_code()`.
-- If parsing encounters a syntax error or unsupported format $\to$ falls back gracefully to indentation/block windowing without failing.
+- If file extension is `.py` $\to$ dispatches to `chunk_python_ast()` for atomic function, class, and method parsing.
+- If file extension is any other code format (`.rs`, `.ts`, `.js`, `.go`, `.cpp`, etc.) $\to$ treated as plain text with `# File: {name}` heading breadcrumb and standard paragraph/line windowing.
+- If Python parsing encounters a syntax error $\to$ falls back gracefully to line windowing without failing.
 
 ---
 
@@ -70,19 +68,13 @@ Built exclusively on Python's standard library **`ast`** module (0 MB download, 
 
 ---
 
-## 4. Polyglot Code Specification (`chunk_polyglot_code`)
+## 4. Non-Python Code as Text
 
-For Rust, TypeScript, JavaScript, Go, and C/C++:
-1. Fast regex scanner detecting top-level block declarations:
-   - Rust: `pub fn`, `fn`, `impl`, `struct`, `enum`, `trait`
-   - TypeScript / JS: `export function`, `function`, `class`, `interface`, `type`, `const ... = (...) =>`
-   - Go: `func (...)`, `func`, `type ... struct`, `type ... interface`
-   - C / C++: function definitions with return types, `class`, `struct`, `namespace`
-2. Brace matching (`{` / `}`) tracking block nesting depth:
-   - Level 0 $\to$ Level 1 transition identifies the start of an atomic block.
-   - Return to Level 0 identifies the end of the block.
-3. Breadcrumb extracted from declaration signature.
-4. Fallback to double-newline / paragraph sliding window if braces are unbalanced.
+For all other code formats (`.rs`, `.ts`, `.js`, `.go`, `.cpp`, `.c`, `.java`, `.sh`, `.sql`, etc.):
+1. Prepends `# File: {filename}` header.
+2. Routes through the standard sliding-window text chunker.
+3. Completely avoids brittle regex or brace heuristics that are prone to silent edge-case corruption.
+4. Allows LLMs to reason over code chunks without artificial syntax boundary assumptions.
 
 ---
 

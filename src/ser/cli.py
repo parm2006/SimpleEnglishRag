@@ -19,6 +19,7 @@ from ser.eval import BENCHMARK_DATASET, render_console_report, run_benchmark, sa
 from ser.generate import get_local_model, stream_answer
 from ser.ingest import fetch_wiki_article, resolve_target
 from ser.pipeline import ask, filter_unchanged_docs, index_documents
+from ser.transfer import transfer_database
 
 console = Console()
 
@@ -309,6 +310,7 @@ def show_help() -> None:
     help_table.add_row(r"/ingest-wiki <title>", "Crawl and index a Wikipedia article live by title")
     help_table.add_row(r"/download-dump", "Download official Simple Wikipedia compressed dump (339 MB)")
     help_table.add_row(r"/ingest-dump \[N]", "Stream-ingest N articles from dump (default: 500)")
+    help_table.add_row(r"/transfer \[c2l | l2c] \[-y] \[--keep-source]", "Transfer entire database between Cloud & Local SSD with space checks & verification")
     help_table.add_row(r"/stats", "Show Qdrant collection size and storage metrics")
     help_table.add_row(r"/help", "Show this help table")
     help_table.add_row(r"/exit, /quit", "Exit the CLI")
@@ -326,6 +328,34 @@ def main() -> None:
             return
         elif first_arg in ("stats", "--stats"):
             cmd_stats()
+            return
+        elif first_arg in ("transfer", "--transfer"):
+            args = sys.argv[2:]
+            auto_confirm = "--yes" in args or "-y" in args
+            keep_source = "--keep-source" in args
+            batch_size = 500
+            clean_args = []
+            i = 0
+            while i < len(args):
+                a = args[i]
+                if a in ("--yes", "-y", "--keep-source"):
+                    i += 1
+                elif a in ("--batch-size", "-b") and i + 1 < len(args):
+                    try:
+                        batch_size = int(args[i + 1])
+                    except ValueError:
+                        pass
+                    i += 2
+                else:
+                    clean_args.append(a)
+                    i += 1
+            direction = clean_args[0] if clean_args else None
+            transfer_database(
+                direction=direction,
+                batch_size=batch_size,
+                auto_confirm=auto_confirm,
+                keep_source=keep_source,
+            )
             return
         elif first_arg in ("eval", "benchmark", "--eval"):
             clean_args, hybrid, rerank = _extract_search_flags(sys.argv[2:])
@@ -384,6 +414,18 @@ def main() -> None:
                 show_help()
             elif user_input.lower() == "/stats":
                 cmd_stats()
+            elif user_input.lower().startswith("/transfer"):
+                parts = user_input.split()
+                args = parts[1:]
+                auto_confirm = "--yes" in args or "-y" in args
+                keep_source = "--keep-source" in args
+                clean_args = [a for a in args if a not in ("--yes", "-y", "--keep-source")]
+                direction = clean_args[0] if clean_args else None
+                transfer_database(
+                    direction=direction,
+                    auto_confirm=auto_confirm,
+                    keep_source=keep_source,
+                )
             elif user_input.lower().startswith("/eval") or user_input.lower().startswith("/benchmark"):
                 parts = user_input.split()
                 clean_parts, hybrid, rerank = _extract_search_flags(parts[1:])

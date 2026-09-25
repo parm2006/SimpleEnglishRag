@@ -20,30 +20,58 @@ QDRANT_LOCAL_PATH = (
 COLLECTION_NAME = os.getenv("QDRANT_COLLECTION", "simple_wiki")
 
 
-def get_client() -> QdrantClient:
-    storage = os.getenv("QDRANT_STORAGE", QDRANT_STORAGE).lower()
+_clients: dict[str, QdrantClient] = {}
+
+
+def get_storage_client(storage: str) -> QdrantClient:
+    """Returns a cached QdrantClient for a specific storage mode ('cloud', 'local', or 'memory')."""
+    storage = storage.lower()
+    if storage in _clients:
+        return _clients[storage]
+
     url = os.getenv("QDRANT_URL", QDRANT_URL)
     api_key = os.getenv("QDRANT_API_KEY", QDRANT_API_KEY)
-    if storage == "cloud" and url:
-        return QdrantClient(url=url, api_key=api_key, timeout=30.0)
+    if storage == "cloud":
+        if not url:
+            raise ValueError("QDRANT_URL is required for cloud storage.")
+        c = QdrantClient(url=url, api_key=api_key, timeout=60.0)
+    elif storage == "local":
+        os.makedirs(QDRANT_LOCAL_PATH, exist_ok=True)
+        c = QdrantClient(path=QDRANT_LOCAL_PATH)
     elif storage == "memory":
-        return QdrantClient(":memory:")
-    # Default: local SSD storage
-    os.makedirs(QDRANT_LOCAL_PATH, exist_ok=True)
-    return QdrantClient(path=QDRANT_LOCAL_PATH)
+        c = QdrantClient(":memory:")
+    else:
+        raise ValueError(f"Unknown storage type: {storage}")
 
+    _clients[storage] = c
+    return c
+
+
+def get_client() -> QdrantClient:
+    storage = os.getenv("QDRANT_STORAGE", QDRANT_STORAGE).lower()
+    return get_storage_client(storage)
 
 
 client = get_client()
 
 import atexit
-atexit.register(client.close)
 
 
-def init_collection(client: QdrantClient) -> None:
-    if not client.collection_exists(COLLECTION_NAME):
+def _cleanup_clients():
+    for c in list(_clients.values()):
+        try:
+            c.close()
+        except Exception:
+            pass
+
+
+atexit.register(_cleanup_clients)
+
+
+def init_collection(client: QdrantClient, collection_name: str = COLLECTION_NAME) -> None:
+    if not client.collection_exists(collection_name):
         client.create_collection(
-            collection_name=COLLECTION_NAME,
+            collection_name=collection_name,
             vectors_config=models.VectorParams(
                 size=384,
                 distance=models.Distance.COSINE,
@@ -63,27 +91,33 @@ def init_collection(client: QdrantClient) -> None:
                 on_disk=True,
             ),
         )
-        # Create full-text payload indexes for hybrid search
-        client.create_payload_index(
-            collection_name=COLLECTION_NAME,
-            field_name="title",
-            field_schema=models.TextIndexParams(
-                type=models.TextIndexType.TEXT,
-                tokenizer=models.TokenizerType.WORD,
-                lowercase=True,
-            ),
-        )
-        client.create_payload_index(
-            collection_name=COLLECTION_NAME,
-            field_name="text",
-            field_schema=models.TextIndexParams(
-                type=models.TextIndexType.TEXT,
-                tokenizer=models.TokenizerType.WORD,
-                lowercase=True,
-                on_disk=True,
-            ),
-            wait=False,
-        )
+        # Create full-text payload indexes for hybrid search (server-only, harmless on local)
+        import warnings
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            try:
+                client.create_payload_index(
+                    collection_name=collection_name,
+                    field_name="title",
+                    field_schema=models.TextIndexParams(
+                        type=models.TextIndexType.TEXT,
+                        tokenizer=models.TokenizerType.WORD,
+                        lowercase=True,
+                    ),
+                )
+                client.create_payload_index(
+                    collection_name=collection_name,
+                    field_name="text",
+                    field_schema=models.TextIndexParams(
+                        type=models.TextIndexType.TEXT,
+                        tokenizer=models.TokenizerType.WORD,
+                        lowercase=True,
+                        on_disk=True,
+                    ),
+                    wait=False,
+                )
+            except Exception:
+                pass
 
 
 def insert_points(

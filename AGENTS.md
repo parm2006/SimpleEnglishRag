@@ -51,6 +51,20 @@ ser ingest-wiki "<Article Title>"
 ```
 - Fetches article prose from Wikipedia Action API, splits into ~1,200 character chunks, generates vectors, and upserts to Qdrant Cloud.
 
+### E. Transfer Database Between Cloud & Local
+```bash
+# Transfer from Cloud to Local SSD with pre-flight space check, verification & safe cleanup
+ser transfer cloud-to-local
+
+# Transfer from Local SSD to Qdrant Cloud
+ser transfer local-to-cloud
+
+# Unattended / scripted mode (auto-confirm transfer and old collection cleanup)
+ser transfer cloud-to-local -y
+```
+- **Pre-flight Checks**: Calculates required storage space (~6 KB/point) and verifies local SSD disk free space or Qdrant Cloud plan tier.
+- **Verification & Cleanup**: Verifies point count integrity (`target >= source`) before confirming deletion of the old source collection and automatically updates `QDRANT_STORAGE` in `.env`.
+
 ---
 
 ## 3. Python API Integration

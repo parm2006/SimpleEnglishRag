@@ -16,6 +16,7 @@ class Chunk:
     chunk_index: int
     text: str
     breadcrumb: str = ""
+    source_type: str = "wiki"
 
     def get_embed_text(self) -> str:
         """Returns formatted text injected with the heading breadcrumb for dense embedding.
@@ -65,6 +66,7 @@ def _split_section_text(
     start_index: int,
     chunk_size: int = 1200,
     overlap: int = 200,
+    source_type: str = "wiki",
 ) -> tuple[list[Chunk], int]:
     """Splits a section's text into word-boundary chunks inheriting the section breadcrumb."""
     chunks: list[Chunk] = []
@@ -82,6 +84,7 @@ def _split_section_text(
             chunk_index=start_index,
             text=clean_text,
             breadcrumb=breadcrumb,
+            source_type=source_type,
         )
         return [chk], start_index + 1
 
@@ -105,6 +108,7 @@ def _split_section_text(
                 chunk_index=curr_index,
                 text=chunk_text,
                 breadcrumb=breadcrumb,
+                source_type=source_type,
             )
             chunks.append(chk)
             curr_index += 1
@@ -126,12 +130,13 @@ def create_chunks(
     into every generated chunk.
     """
     text = doc.text.strip()
-    if len(text) < 150 or text == "NOT FOUND":
+    if len(text) < 20 or text == "NOT FOUND":
         return []
 
     doc_id = doc.page_id
     url = doc.url
     title = doc.title
+    source_type = getattr(doc, "source_type", "wiki")
 
     lines = text.splitlines()
 
@@ -198,6 +203,7 @@ def create_chunks(
             start_index=curr_idx,
             chunk_size=chunk_size,
             overlap=overlap,
+            source_type=source_type,
         )
         all_chunks.extend(sec_chunks)
 

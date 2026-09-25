@@ -38,6 +38,7 @@ def create_points(chunks: list[Chunk]) -> list[models.PointStruct]:
             "chunk_index": chunk.chunk_index,
             "text": chunk.text,
             "breadcrumb": chunk.breadcrumb,
+            "source_type": getattr(chunk, "source_type", "wiki"),
         }
         points.append(
             models.PointStruct(

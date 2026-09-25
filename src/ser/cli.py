@@ -17,7 +17,7 @@ from ser.download import download_dump
 from ser.dump import iter_dump_articles
 from ser.eval import BENCHMARK_DATASET, render_console_report, run_benchmark, save_markdown_report
 from ser.generate import get_local_model, stream_answer
-from ser.ingest import fetch_wiki_article
+from ser.ingest import fetch_wiki_article, resolve_target
 from ser.pipeline import ask, index_documents
 
 console = Console()
@@ -64,6 +64,50 @@ def cmd_stats() -> None:
         console.print(table)
     except Exception as e:
         console.print(f"[red]Error fetching stats: {e}[/red]")
+
+
+def cmd_add(target: str) -> None:
+    target_clean = target.strip()
+    if not target_clean:
+        console.print("[red]Usage: ser add <file | folder | url | 'Wikipedia Title'>[/red]")
+        return
+
+    with console.status(f"[cyan]Analyzing target: {target_clean}...", spinner="dots"):
+        try:
+            resolution, payload = resolve_target(target_clean)
+        except Exception as e:
+            console.print(f"[red]Error analyzing target: {e}[/red]")
+            return
+
+    if resolution == "wiki_404":
+        console.print(f"[red]Error 404: No local file, directory, or Wikipedia article found for '{target_clean}'.[/red]")
+        return
+    elif resolution == "wiki_suggestions":
+        suggestions_str = ", ".join(f"[bold cyan]'{s}'[/bold cyan]" for s in payload)
+        console.print(
+            f"[yellow]No exact Wikipedia article found for '{target_clean}'.[/yellow]\n"
+            f"[dim]Did you mean:[/dim] {suggestions_str}\n"
+            f"[dim]To index one, run:[/dim] [cyan]ser add \"{payload[0]}\"[/cyan]"
+        )
+        return
+    elif resolution == "empty_directory":
+        console.print(f"[yellow]Directory '{target_clean}' contains no supported files.[/yellow]")
+        return
+
+    docs = payload
+    if not docs:
+        console.print(f"[yellow]No content extracted from '{target_clean}'.[/yellow]")
+        return
+
+    desc = f"{len(docs)} document(s)" if len(docs) > 1 else f"'{docs[0].title}'"
+    with console.status(f"[cyan]Chunking, embedding and indexing {desc} into Qdrant...", spinner="dots"):
+        total_chunks = index_documents(docs, client=client)
+
+    console.print(f"[bold green]✓ Successfully indexed {total_chunks:,} chunks from {desc} into '{COLLECTION_NAME}'![/bold green]")
+    for d in docs[:5]:
+        console.print(f"  [dim]• [{d.source_type.upper()}] {d.title} ({d.url})[/dim]")
+    if len(docs) > 5:
+        console.print(f"  [dim]... and {len(docs) - 5} more files.[/dim]")
 
 
 def cmd_ingest_wiki(title: str) -> None:
@@ -149,8 +193,8 @@ def cmd_ask(query: str, k: int = 3, hybrid: bool = False, rerank: bool = False) 
     console.print(f"\n[bold cyan]Question:[/bold cyan] {query}\n")
     console.print("[bold green]Answer:[/bold green]")
     collected_answer = []
-    # 💬 Bouncing typing dots while the LLM is "thinking"
-    with console.status("[italic cyan]● ● ● Thinking...[/italic cyan]", spinner="dots"):
+    # Bouncing spinner while the LLM is thinking
+    with console.status("[italic cyan]Thinking...[/italic cyan]", spinner="dots"):
         answer_stream = stream_answer(query, chunks)
         try:
             first_token = next(answer_stream)
@@ -249,6 +293,7 @@ def show_help() -> None:
     help_table.add_column("Command", style="bold yellow")
     help_table.add_column("Description")
     help_table.add_row(r"<question> \[--hybrid] \[--rerank]", "Ask any question (runs full RAG with local Ollama; add --hybrid / --rerank)")
+    help_table.add_row(r"/add <target>", "Polymorphic ingest: local file, folder, PDF, URL, or Wikipedia title")
     help_table.add_row(r"/search <query> \[--hybrid] \[--rerank]", "Semantic search only (shows matching chunks and scores; optional --hybrid / --rerank)")
     help_table.add_row(r"/ask <question> \[--hybrid] \[--rerank]", "Full RAG answer with optional hybrid search and cross-encoder re-ranking")
     help_table.add_row(r"/eval \[k] \[--hybrid] \[--rerank]", "Run automated benchmark measuring Hit Rate and latency")
@@ -281,8 +326,14 @@ def main() -> None:
                     k = int(a)
             cmd_eval(k=k, hybrid=hybrid, rerank=rerank)
             return
-        elif first_arg == "download-dump":
+        elif first_arg in ("download-dump", "--download-dump"):
             cmd_download_dump()
+            return
+        elif first_arg in ("add", "--add"):
+            if len(sys.argv) > 2:
+                cmd_add(" ".join(sys.argv[2:]))
+            else:
+                console.print("[red]Usage: ser add <file | folder | url | 'Wikipedia Title'>[/red]")
             return
         elif first_arg == "ingest-wiki" and len(sys.argv) > 2:
             cmd_ingest_wiki(" ".join(sys.argv[2:]))
@@ -331,6 +382,12 @@ def main() -> None:
                 cmd_eval(k=k, hybrid=hybrid, rerank=rerank)
             elif user_input.lower() == "/download-dump":
                 cmd_download_dump()
+            elif user_input.lower().startswith("/add") or user_input.lower().startswith("add "):
+                parts = user_input.split(maxsplit=1)
+                if len(parts) > 1:
+                    cmd_add(parts[1])
+                else:
+                    console.print("[red]Usage: /add <file | folder | url | 'Wikipedia Title'>[/red]")
             elif user_input.lower().startswith("/ingest-dump"):
                 parts = user_input.split()
                 reset = "--reset" in parts

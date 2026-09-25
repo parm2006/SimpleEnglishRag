@@ -37,6 +37,122 @@ def _get_node_lines(code_lines: list[str], node: ast.AST) -> tuple[int, int, str
     return start_lineno, end_lineno, source_text
 
 
+def _count_code_braces(line: str, state: dict) -> tuple[int, int]:
+    """Lexical brace counter that ignores braces inside comments, strings, template literals, and raw literals."""
+    opens = 0
+    closes = 0
+    i = 0
+    n = len(line)
+
+    if "stack" not in state:
+        state["stack"] = []
+    if "depth" not in state:
+        state["depth"] = 0
+
+    stack = state["stack"]
+
+    while i < n:
+        c = line[i]
+        nxt = line[i + 1] if i + 1 < n else ""
+        current_ctx = stack[-1] if stack else None
+        ctx_name = current_ctx[0] if isinstance(current_ctx, tuple) else current_ctx
+
+        # 1. Block comment mode (/* ... */)
+        if ctx_name == "BLOCK_COMMENT":
+            if c == "*" and nxt == "/":
+                stack.pop()
+                i += 2
+                continue
+            i += 1
+            continue
+
+        # 2. C++ raw string R"( ... )" or Rust raw string r#" ... "#
+        if ctx_name == "RAW_STRING":
+            if (c == ")" and nxt == '"') or (c == '"' and nxt == "#"):
+                stack.pop()
+                i += 2
+                continue
+            i += 1
+            continue
+
+        # 3. Regular strings
+        if ctx_name in ("STRING_DOUBLE", "STRING_SINGLE"):
+            if c == "\\":
+                i += 2
+                continue
+            if (ctx_name == "STRING_DOUBLE" and c == '"') or (ctx_name == "STRING_SINGLE" and c == "'"):
+                stack.pop()
+            i += 1
+            continue
+
+        # 4. JS/TS Template literals ` ... ${ ... } ... `
+        if ctx_name == "TEMPLATE_STR":
+            if c == "\\":
+                i += 2
+                continue
+            if c == "`":
+                stack.pop()
+                i += 1
+                continue
+            if c == "$" and nxt == "{":
+                stack.append(("TEMPLATE_EXPR", state["depth"] + opens - closes))
+                i += 2
+                continue
+            i += 1
+            continue
+
+        # 5. Code mode
+        if c == "/" and nxt == "/":
+            break  # Single-line comment, rest of line ignored
+        if c == "/" and nxt == "*":
+            stack.append("BLOCK_COMMENT")
+            i += 2
+            continue
+
+        # Raw string literal start (C++ R"( or Rust r#")
+        if (c == "R" and nxt == '"' and i + 2 < n and line[i + 2] == "(") or (
+            c == "r" and nxt == "#" and i + 2 < n and line[i + 2] == '"'
+        ):
+            stack.append("RAW_STRING")
+            i += 3
+            continue
+
+        if c == '"':
+            stack.append("STRING_DOUBLE")
+            i += 1
+            continue
+        if c == "'":
+            # Disambiguate Rust lifetime 'a or char literal 'x'
+            if i + 2 < n and line[i + 2] == "'":
+                i += 3
+                continue
+            elif i + 1 < n and line[i + 1].isalpha() and (i + 2 >= n or not line[i + 2].isalpha()):
+                i += 2
+                continue
+            else:
+                stack.append("STRING_SINGLE")
+                i += 1
+                continue
+        if c == "`":
+            stack.append("TEMPLATE_STR")
+            i += 1
+            continue
+
+        # Real code braces
+        if c == "{":
+            opens += 1
+        elif c == "}":
+            cur_depth = state["depth"] + opens - closes
+            if ctx_name == "TEMPLATE_EXPR" and cur_depth <= current_ctx[1]:
+                stack.pop()
+            else:
+                closes += 1
+        i += 1
+
+    state["depth"] += (opens - closes)
+    return opens, closes
+
+
 def _split_oversized_code(
     header_context: str,
     body_text: str,
@@ -46,7 +162,7 @@ def _split_oversized_code(
     breadcrumb: str,
     start_index: int,
     chunk_size: int = 1200,
-    overlap: int = 200,
+    overlap: int = 0,
     content_hash: str = "",
 ) -> tuple[list[Chunk], int]:
     """Splits an oversized code block along line boundaries, preserving the header context on each part."""
@@ -348,9 +464,9 @@ def chunk_python_ast(
 
 
 def chunk_polyglot_code(
-    doc: Document, chunk_size: int = 1200, overlap: int = 200
+    doc: Document, chunk_size: int = 1200, overlap: int = 0
 ) -> list[Chunk]:
-    """Chunker for non-Python languages (Rust, TypeScript, Go, C/C++) using block & brace matching."""
+    """Chunker for non-Python languages (Rust, TypeScript, Go, C/C++) using block & lexical brace matching."""
     code = doc.text
     lines = code.splitlines()
     doc_id = doc.page_id
@@ -364,20 +480,28 @@ def chunk_polyglot_code(
     chunks: list[Chunk] = []
     chunk_index = 0
 
-    # Scan for top-level block boundaries via indentation 0 and brace balancing
+    # Scan for top-level block boundaries via indentation 0 and lexical brace balancing
     blocks: list[tuple[str, str]] = []  # (breadcrumb_hint, block_text)
     current_block: list[str] = []
     current_breadcrumb = f"{title} > Preamble"
     brace_depth = 0
     in_block = False
+    lex_state: dict = {}
 
     for line in lines:
         stripped = line.strip()
-        open_braces = line.count("{")
-        close_braces = line.count("}")
+        open_braces, close_braces = _count_code_braces(line, lex_state)
 
         # Check if line initiates a top-level block at indentation 0
-        if not in_block and (line.startswith(("pub ", "export ", "async ", "fn ", "function ", "func ", "class ", "struct ", "impl ", "trait ", "interface ", "type ")) or (open_braces > 0 and not line.startswith(" "))):
+        if not in_block and (
+            line.startswith((
+                "pub ", "export ", "async ", "fn ", "function ", "func ",
+                "class ", "struct ", "impl", "trait ", "interface ", "type ",
+                "template ", "namespace ", "inline ", "static ", "enum ",
+                "#[", "macro_rules!", "int main", "void ", "bool ", "auto "
+            ))
+            or (open_braces > 0 and not line.startswith(" "))
+        ):
             if current_block:
                 block_body = "\n".join(current_block).strip()
                 if len(block_body) >= 20:

@@ -1,31 +1,91 @@
-# Downloaded or generated RAG assets
-data/
-models/
-
-# Local dependency environments
-.venv/
-node_modules/
-
-# Build and test output
-dist/
-coverage/
-test-results/
-playwright-report/
-__pycache__/
-*.py[cod]
-
-
-# Secrets: templates are intentionally allowed below
+# ==============================================================================
+# SECRETS, CREDENTIALS & SENSITIVE KEYS
+# ==============================================================================
 .env*
 .dev.vars*
 !.env.example
 !.dev.vars.example
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+*.id_rsa
+*credentials*.json
+auth*.json
 
-# Generated build artifacts
-*.snapshot
+# ==============================================================================
+# LOCAL VECTOR STORAGE & DATABASES
+# ==============================================================================
+data/
+qdrant_db/
+*.sqlite
+*.sqlite3
+*.db
+checkpoints/
 
+# ==============================================================================
+# LARGE ASSETS, DUMPS & MODEL WEIGHTS
+# ==============================================================================
+models/
+dumps/
+*.xml.bz2
+*.dump
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.onnx
+*.parquet
 
-# Personal stuff
+# ==============================================================================
+# PYTHON ENVIRONMENTS & COMPILATION CACHES
+# ==============================================================================
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+coverage/
+.coverage
+htmlcov/
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# ==============================================================================
+# OS & EDITOR METADATA
+# ==============================================================================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.cursor/
+.gemini/
+.antigravity/
+
+# ==============================================================================
+# LOGS, BENCHMARK REPORTS & SCRATCH ARTIFACTS
+# ==============================================================================
+*.log
 reports/
 handoffs/
+test-results/
+playwright-report/
+*.snapshot
+temp_*/
+scratch/
 wikipedia-rag-roadmap.md

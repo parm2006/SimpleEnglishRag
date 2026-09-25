@@ -32,10 +32,14 @@ def extract_text_file(path: Path) -> Document:
         if title_match:
             title = title_match.group(1).strip()
         doc_text = content
-    elif ext in CODE_EXTS:
+    elif ext == ".py":
         source_type = "code"
         title = resolved.name
         doc_text = content
+    elif ext in CODE_EXTS:
+        source_type = "code"
+        title = resolved.name
+        doc_text = f"# File: {resolved.name}\n\n{content}"
     else:
         source_type = "text"
         title = resolved.name

@@ -143,9 +143,9 @@ def create_chunks(
     source_type = getattr(doc, "source_type", "wiki")
     content_hash = getattr(doc, "content_hash", "")
 
-    if source_type == "code":
-        from ser.ingest.chunk_code import chunk_code
-        return chunk_code(doc, chunk_size=chunk_size, overlap=overlap)
+    if source_type == "code" and (url.lower().endswith(".py") or title.lower().endswith(".py")):
+        from ser.ingest.chunk_code import chunk_python_ast
+        return chunk_python_ast(doc, chunk_size=chunk_size, overlap=overlap)
 
     lines = text.splitlines()
 

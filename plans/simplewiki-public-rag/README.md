@@ -31,12 +31,14 @@ Per explicit user decisions, the following originally planned components have be
 | **MCP Server (Model Context Protocol)** | Expansion | ✅ **Done** | [`src/ser/mcp_server.py`](../../src/ser/mcp_server.py) exposing `search_wikipedia`, `ask_wikipedia`, and `index_article` to Google Antigravity, Claude Desktop, and Cursor. |
 | **Evaluation Suite (`eval.py`)** | Phase 4.2 | ✅ **Done** | Automated benchmark: **100% Hit@5**, **86.7% Hit@1**, **0.9150 MRR**, **98.7 ms p50 latency** across 30 domains. |
 | **Hybrid Search (Dense + BM25)** | Plan 014 | ✅ **Done** | FastEmbed BM25 + Qdrant Cloud on-disk payload text index + RRF fusion (+6.2% recall, 114 ms latency). |
-| **Universal Ingestion (`ser add`)**| Plan 015 | ✅ **Done** | Polymorphic zero-flag ingestion for local Markdown, code, PDFs (`pymupdf4llm`), web URLs, and Wikipedia articles with nearest-match fallback. |
+| **Universal Ingestion (`ser add`)**| Plan 015 | ✅ **Done** | Polymorphic zero-flag ingestion for local Markdown, code, PDFs (`pymupdf4llm`), web URLs, and Wikipedia articles with nearest-match fallback and content_hash dedup. |
+| **AST-Based Code Chunking** | Plan 016 | 🔄 **In Progress** | Syntax-aware atomic chunking for Python (`ast`) and polyglot codebases (`.rs`, `.ts`, `.go`, `.cpp`) with function/class breadcrumbs. |
 
 ---
 
 ## 3. Active Next Priorities
 
-1. **Continuous Expansion & Evaluation**: Expanding test coverage, benchmarking retrieval accuracy across mixed-format local vaults and web content.
+1. **Plan 016 (AST Code Chunking)**: Implementing `src/ser/ingest/chunk_code.py` using Python's standard library `ast` module to eliminate severed functions and orphan code signatures.
+2. **Continuous Expansion & Evaluation**: Benchmarking retrieval accuracy across codebases, technical documentation, and mixed-format local vaults.
 
 

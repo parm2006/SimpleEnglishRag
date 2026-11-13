@@ -302,7 +302,7 @@ def cmd_eval(k: int = 5, hybrid: bool = False, rerank: bool = False, save_report
 
 
 def show_help() -> None:
-    help_table = Table(title="Available Commands", border_style="cyan")
+    help_table = Table(title="Available Commands", border_style="cyan", show_lines=True)
     help_table.add_column("Command", style="bold yellow")
     help_table.add_column("Description")
     help_table.add_row(r"<question> \[--hybrid] \[--rerank]", "Ask any question (runs full RAG with local Ollama; add --hybrid / --rerank)")

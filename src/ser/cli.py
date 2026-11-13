@@ -115,7 +115,10 @@ def cmd_add(target: str) -> None:
 
     console.print(f"[bold green]✓ Successfully indexed {total_chunks:,} chunks from {desc} into '{COLLECTION_NAME}'![/bold green]")
     for d in to_index[:5]:
-        console.print(f"  [dim]• [{d.source_type.upper()}] {d.title} ({d.url})[/dim]")
+        wiki_tag = ""
+        if d.source_type == "wiki":
+            wiki_tag = " [dim cyan](en.wikipedia)[/dim cyan]" if "en.wikipedia" in (d.url or "") else " [dim cyan](simple.wikipedia)[/dim cyan]"
+        console.print(f"  [dim]• [{d.source_type.upper()}] {d.title}{wiki_tag} ({d.url})[/dim]")
     if len(to_index) > 5:
         console.print(f"  [dim]... and {len(to_index) - 5} more files.[/dim]")
 
